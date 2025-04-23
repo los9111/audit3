@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">Search Results for "{{ query }}"</h2>
+    
+    {% if search_terms %}
+    <div class="alert alert-info mb-4">
+        Searching for:
+        {% for term in search_terms %}
+            <span class="badge bg-primary me-1">{{ term }}</span>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    {% if results %}
+    <div class="row row-cols-1 row-cols-md-2 g-4">
+        {% for project in results %}
+        <div class="col">
+            <div class="card project-card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ project.project_name }}</h5>
+                    <div class="project-meta mb-3">
+                        <span class="badge bg-nhs-blue me-1">
+                            <i class="fas fa-hospital"></i> {{ project.hospital }}
+                        </span>
+                        <span class="badge bg-nhs-light-blue me-1">
+                            <i class="fas fa-calendar"></i> {{ project.year }}
+                        </span>
+                        <span class="badge bg-nhs-dark-blue">
+                            <i class="fas fa-tag"></i> {{ project.project_type|upper }}
+                        </span>
+                    </div>
+                    
+                    <div class="keywords mb-3">
+                        {% for keyword in project.keywords.split(',') %}
+                            <span class="badge bg-secondary me-1">{{ keyword.strip() }}</span>
+                        {% endfor %}
+                    </div>
+                    
+                    <p class="card-text text-muted">
+                        <small>
+                            <i class="fas fa-stethoscope"></i> {{ project.specialty }}<br>
+                            <i class="fas fa-clock"></i> Added {{ project.date_added.strftime('%d %b %Y') }}
+                        </small>
+                    </p>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <a 
+                      href="{{ url_for('view_project_slug', project_type=project.project_type, slug=project.slug) }}" 
+                      class="btn btn-outline-primary btn-sm"
+                    >
+                        View Details <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-warning">
+        No projects found matching your search criteria.
+        <a href="{{ url_for('submit_project') }}" class="alert-link">Be the first to submit one!</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

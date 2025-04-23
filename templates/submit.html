@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="card shadow-sm">
+    <div class="card-header text-white" style="background-color: var(--nhs-blue);">
+      <h3 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Submit a New Project</h3>
+    </div>
+    <div class="card-body">
+      <form method="POST">
+        {{ form.hidden_tag() }}
+
+        <div class="row g-3">
+          <!-- Project Name -->
+          <div class="col-md-6">
+            <label for="project_name" class="form-label">{{ form.project_name.label.text }}</label>
+            {{ form.project_name(class="form-control", id="project_name") }}
+          </div>
+
+          <!-- Project Type -->
+          <div class="col-md-6">
+            <label for="project_type" class="form-label">{{ form.project_type.label.text }}</label>
+            {{ form.project_type(class="form-select", id="project_type") }}
+          </div>
+
+          <!-- Hospital -->
+          <div class="col-md-6">
+            <label for="hospital" class="form-label">{{ form.hospital.label.text }}</label>
+            {{ form.hospital(class="form-select", id="hospital") }}
+          </div>
+
+          <!-- Year -->
+          <div class="col-md-6">
+            <label for="year" class="form-label">{{ form.year.label.text }}</label>
+            {{ form.year(class="form-control", id="year") }}
+          </div>
+
+          <!-- Specialty -->
+          <div class="col-md-6">
+            <label for="specialty" class="form-label">{{ form.specialty.label.text }}</label>
+            {{ form.specialty(class="form-select", id="specialty") }}
+          </div>
+
+          <!-- Guidelines -->
+          <div class="col-md-6">
+            <label for="guidelines" class="form-label">{{ form.guidelines.label.text }}</label>
+            {{ form.guidelines(class="form-control", id="guidelines") }}
+          </div>
+
+          <!-- Background -->
+          <div class="col-12">
+            <label for="background" class="form-label">{{ form.background.label.text }}</label>
+            {{ form.background(class="form-control", id="background", rows="4") }}
+          </div>
+
+          <!-- Aims -->
+          <div class="col-md-6">
+            <label for="aims" class="form-label">{{ form.aims.label.text }}</label>
+            {{ form.aims(class="form-control", id="aims", rows="2") }}
+          </div>
+
+          <!-- Objectives -->
+          <div class="col-md-6">
+            <label for="objectives" class="form-label">{{ form.objectives.label.text }}</label>
+            {{ form.objectives(class="form-control", id="objectives", rows="2") }}
+          </div>
+
+          <!-- Keywords -->
+          <div class="col-md-6">
+            <label for="keywords" class="form-label">{{ form.keywords.label.text }}</label>
+            {{ form.keywords(class="form-control", id="keywords") }}
+            <div class="form-text">Comma-separated keywords (e.g. “audit, safety”)</div>
+          </div>
+
+          <!-- Email -->
+          <div class="col-md-6">
+            <label for="email" class="form-label">{{ form.email.label.text }}</label>
+            {{ form.email(class="form-control", id="email") }}
+          </div>
+
+          <!-- Data Protection -->
+          <div class="col-12">
+            <div class="form-check">
+              {{ form.data_protection(class="form-check-input", id="data_protection") }}
+              <label for="data_protection" class="form-check-label">{{ form.data_protection.label.text }}</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4 text-end">
+          <button type="submit" class="btn btn-primary btn-lg">
+            <i class="fas fa-paper-plane me-2"></i>Submit Project
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-lock"></i> Admin Login</h4>
+                </div>
+                <div class="card-body">
+                    <form id="adminLoginForm">
+                        <div class="mb-3">
+                            <label class="form-label">Username</label>
+                            <input type="text" name="username" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Password</label>
+                            <input type="password" name="password" class="form-control" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-sign-in-alt"></i> Login
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const form = e.target;
+        const formData = {
+            username: form.username.value.trim(),
+            password: form.password.value.trim()
+        };
+    
+        // Validate inputs before sending
+        if (!formData.username || !formData.password) {
+            alert('Please fill in both fields');
+            return;
+        }
+    
+        try {
+            const response = await fetch('/admin/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': "{{ csrf_token() }}"  // Add CSRF token
+                },
+                body: JSON.stringify(formData),
+                credentials: 'include'
+            });
+    
+            const data = await response.json();
+            
+            if (response.ok) {
+                localStorage.setItem('jwtToken', data.access_token);
+                window.location.href = '/admin';
+            } else {
+                alert(data.msg || 'Login failed');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Connection error');
+        }
+    });
+    </script>
+{% endblock %}

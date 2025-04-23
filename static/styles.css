@@ -1,0 +1,114 @@
+:root {
+  --nhs-blue: #005EB8;
+  --nhs-light-blue: #41B6E6;
+  --nhs-dark-blue: #003087;
+}
+
+.btn-primary {
+  background-color: var(--nhs-blue);
+  border-color: var(--nhs-blue);
+}
+
+.btn-outline-primary {
+  color: var(--nhs-blue);
+  border-color: var(--nhs-blue);
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--nhs-blue);
+  color: white;
+}
+
+.hero-section {
+  min-height: 70vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.project-card {
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 1px solid rgba(0,0,0,0.125);
+}
+
+.project-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.star-rating {
+  color: #ffd700;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.star-rating:hover {
+  color: #ffc107;
+}
+
+/* Data Protection Section Styling */
+.nhs-data-warning {
+  border-left: 4px solid #005EB8;
+  padding-left: 1rem;
+  margin: 2rem 0;
+}
+
+.nhs-data-warning .alert-warning {
+  border-left: 4px solid #ffc107;
+}
+
+.nhs-data-warning ul {
+  margin: 0.5rem 0 1rem 1rem;
+}
+
+/* Data Protection Section Styling */
+.nhs-data-warning {
+  border-left: 4px solid #005EB8;
+  padding-left: 1rem;
+  margin: 2rem 0;
+}
+
+.nhs-data-warning .alert-warning {
+  border-left: 4px solid #ffc107;
+}
+
+.nhs-data-warning ul {
+  margin: 0.5rem 0 1rem 1rem;
+}
+
+/* Data Protection Styling */
+.data-protection-alert .alert {
+  border-left: 4px solid;
+}
+
+.data-protection-alert .alert-warning {
+  border-color: #ffc107;
+  background: #fff3cd;
+}
+
+.data-protection-alert .alert-info {
+  border-color: #0dcaf0;
+  background: #d1ecf1;
+}
+
+.nhs-data-alert {
+  border-left: 4px solid #6c757d;
+  padding-left: 1rem;
+  margin-top: 1rem;
+}
+
+.nhs-email-protection {
+  unicode-bidi: bidi-override;
+  direction: rtl;
+}
+
+/* Add this to handle line breaks */
+.preserve-formatting {
+  white-space: pre-line;
+  line-height: 1.6;
+}
+
+/* restore Bootstrap-4-style form-group spacing */
+.form-group {
+  margin-bottom: 1rem;
+}

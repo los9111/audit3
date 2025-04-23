@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block scripts %}
+<script>
+    // 3. UPDATE ADMIN TEMPLATE JAVASCRIPT - PUT THIS FIRST
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get tokens
+        const token = localStorage.getItem('jwtToken');
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+    
+        // 4. ADD LOGOUT HANDLER - PUT THIS NEXT
+        const logoutButton = document.getElementById('adminLogout');
+        if (logoutButton) {
+            logoutButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                // Clear tokens and cookies
+                localStorage.removeItem('jwtToken');
+                document.cookie = 'access_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+                window.location.href = '/admin/login';
+            });
+        }
+    
+        // DELETE HANDLER - PUT THIS AFTER LOGOUT
+        document.querySelectorAll('.delete-project').forEach(button => {
+            button.addEventListener('click', async function(e) {
+                if (!token) {
+                    window.location.href = '/admin/login';
+                    return;
+                }
+    
+                const projectId = this.dataset.projectId;
+                const confirmDelete = confirm('Permanently delete this project?');
+                
+                if (confirmDelete) {
+                    try {
+                        const response = await fetch(`/admin/project/${projectId}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'X-CSRF-TOKEN': csrfToken,
+                                'Content-Type': 'application/json'
+                            },
+                            credentials: 'include'
+                        });
+    
+                        if (response.status === 401) {
+                            localStorage.removeItem('jwtToken');
+                            window.location.href = '/admin/login';
+                        }
+                        
+                        if (response.ok) {
+                            this.closest('tr').remove();
+                            showFlashMessage('Project deleted successfully!', 'success');
+                        }
+                    } catch (error) {
+                        console.error('Delete failed:', error);
+                        showFlashMessage('Failed to delete project', 'danger');
+                    }
+                }
+            });
+        });
+    
+        // FLASH MESSAGE HELPER - PUT AT BOTTOM
+        function showFlashMessage(message, type) {
+            const flashDiv = document.createElement('div');
+            flashDiv.className = `alert alert-${type} alert-dismissible fade show mt-3`;
+            flashDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.querySelector('.container').prepend(flashDiv);
+        }
+    });
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="fas fa-user-shield me-2"></i>
+            Admin Portal
+            <small class="text-muted fs-5">(Logged in as {{ current_user.username }})</small>
+        </h2>
+        <button id="adminLogout" class="btn btn-outline-danger">
+            <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
+    </div>
+
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <i class="fas fa-projects me-2"></i> Manage Projects
+        </div>
+        
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Project Name</th>
+                            <th>Hospital</th>
+                            <th>Specialty</th>
+                            <th>Submitted</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for project in projects %}
+                        <tr>
+                            <td>{{ project.id }}</td>
+                            <td>
+                                <a href="{{ url_for('view_project_slug', project_type=project.project_type, slug=project.slug) }}">
+                                    {{ project.project_name }}
+                                </a>
+                            </td>
+                            <td>{{ project.hospital }}</td>
+                            <td>{{ project.specialty }}</td>
+                            <td>{{ project.date_added.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                <button class="btn btn-danger btn-sm delete-project" data-project-id="{{ project.id }}">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">
+                                No projects found in the database.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

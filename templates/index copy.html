@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="hero-section text-center py-5">
+    <h1 class="display-4 mb-4">NHS Clinical Audit Repository</h1>
+
+    <form action="/search" method="GET" class="mb-4">
+        <div class="input-group input-group-lg">
+            <input type="text" class="form-control" name="query" 
+                   placeholder="Search audits by specialty, keyword, or hospital...">
+            <button class="btn btn-primary" type="submit">
+                <i class="fas fa-search"></i>
+            </button>
+        </div>
+    </form>
+
+    <div class="d-grid gap-2 d-md-block">
+        <a href="/submit" class="btn btn-outline-primary btn-lg me-md-2">
+            <i class="fas fa-plus-circle"></i> Submit Audit
+        </a>
+        <a href="/random" class="btn btn-outline-primary btn-lg">
+            <i class="fas fa-dice"></i> Feeling Lucky
+        </a>
+    </div>
+</div>
+{% endblock %}
