@@ -268,6 +268,18 @@ def search():
     results = Project.query.filter(or_(*filters)).order_by(desc(Project.date_added)).all()
     return render_template('search_results.html', results=results, query=query, search_terms=search_terms)
 
+# Custom error pages
+@app.errorhandler(404)
+def not_found_error(error):
+    return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    # If you’re using the database, rollback any failed transaction
+    db.session.rollback()
+    return render_template('500.html'), 500
+
+
 # Random project route that redirects to the new slug-based URL
 @app.route('/random')
 def random_project():
