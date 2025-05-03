@@ -53,10 +53,10 @@ class Project(db.Model):
     audit_logs = db.relationship('AuditLog', backref='project', lazy=True)
     
     def average_rating(self):
-        if not self.ratings:
+        vals = [r.rating for r in self.ratings if r.rating is not None]
+        if not vals:
             return 0.0
-        total = sum(r.rating for r in self.ratings)
-        return round(total / len(self.ratings), 1)
+        return round(sum(vals)/len(vals), 1)
     
     def set_submitter_email(self, email):
         self.submitter_email_hash = generate_password_hash(
@@ -82,13 +82,14 @@ class Project(db.Model):
 # Rating model
 class Rating(db.Model):
     __tablename__ = 'ratings'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    rating = db.Column(db.Integer, nullable=False)
+
+    id         = db.Column(db.Integer, primary_key=True)
+    rating     = db.Column(db.Integer, nullable=True)      # ← nullable=True now
     project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False)
-    comment       = db.Column(db.Text, nullable=True)
-    created_at    = db.Column(db.DateTime, default=datetime.utcnow)
-    approved      = db.Column(db.Boolean, default=False, nullable=False)
+    comment    = db.Column(db.Text,    nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    approved   = db.Column(db.Boolean, default=False, nullable=False)
+
 
 class AuditLog(db.Model):
     __tablename__ = 'audit_logs'
@@ -98,4 +99,16 @@ class AuditLog(db.Model):
     admin_username = db.Column(db.String(80), nullable=False)
     action = db.Column(db.String(20), nullable=False)   # e.g. 'edit', 'delete', 'approve'
     timestamp = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+
+class Comment(db.Model):
+    __tablename__  = 'comments'
+    id             = db.Column(db.Integer, primary_key=True)
+    project_id     = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False)
+    text           = db.Column(db.Text, nullable=False)
+    created_at     = db.Column(db.DateTime, default=datetime.utcnow)
+    approved       = db.Column(db.Boolean, default=False, nullable=False)
+
+# then on Project:
+comments = db.relationship('Comment', backref='project', lazy=True)
 
