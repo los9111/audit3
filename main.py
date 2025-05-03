@@ -7,6 +7,7 @@ except AttributeError:
 import os
 import random
 from datetime import datetime
+from flask import session 
 from flask import (
     Flask, render_template, request, redirect, url_for,
     flash, jsonify, abort, Response
@@ -453,6 +454,37 @@ def view_project_by_id(project_id):
         project_type=proj.project_type,
         slug=proj.slug
     ))
+
+@app.route('/rate/<int:project_id>', methods=['POST'])
+def rate_project(project_id):
+    try:
+        if session.get(f'rated_{project_id}'):
+            return jsonify({'success': False, 'error': 'You have already rated this project'}), 400
+
+        rating_value = int(request.json.get('rating'))
+        if not 1 <= rating_value <= 5:
+            return jsonify({'success': False, 'error': 'Invalid rating value'}), 400
+
+        project = Project.query.get_or_404(project_id)
+        new_rating = Rating(rating=rating_value, project=project)
+        db.session.add(new_rating)
+        db.session.commit()
+
+        session[f'rated_{project_id}'] = True
+
+        return jsonify({
+            'success': True,
+            'new_average': project.average_rating(),
+            'total_ratings': len(project.ratings)
+        })
+
+    except Exception as error:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(error)}), 500
+    
+    except Exception as error:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(error)}), 500
 
 if __name__ == '__main__':
     required = ['ADMIN_USERNAME','ADMIN_PASSWORD','JWT_SECRET_KEY']

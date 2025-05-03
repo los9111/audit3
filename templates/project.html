@@ -5,16 +5,32 @@
     document.addEventListener('DOMContentLoaded', function() {
         const ratingContainer = document.querySelector('.star-rating');
         let isProcessing = false;
-    
+        const projectId = {{ project.id }};
+        const currentAvg = {{ project.average_rating() }};
+        const hasRated = {% if session.get('rated_' ~ project.id) %}true{% else %}false{% endif %};
+
+        // Initialize rating state
+        if (hasRated) {
+            document.querySelectorAll('.fa-star').forEach(star => {
+                star.style.cursor = 'not-allowed';
+            });
+        }
+
         ratingContainer.addEventListener('click', async (e) => {
-            if (isProcessing) return;
+            if (isProcessing || hasRated) return;
             const star = e.target.closest('.fa-star');
             if (!star) return;
-    
+
             isProcessing = true;
             const rating = parseInt(star.dataset.value);
-            const projectId = {{ project.id }};
-    
+            
+            // Optimistic UI update
+            const stars = document.querySelectorAll('.fa-star');
+            stars.forEach((s, idx) => {
+                s.style.color = idx < rating ? '#ffd700' : '#e4e5e9';
+                s.classList.add('processing');
+            });
+
             try {
                 const response = await fetch(`/rate/${projectId}`, {
                     method: 'POST',
@@ -24,18 +40,35 @@
                     },
                     body: JSON.stringify({ rating: rating })
                 });
-    
-                if (!response.ok) throw new Error('Failed to submit rating');
-                
+
                 const result = await response.json();
-                if (result.success) {
-                    document.querySelectorAll('.fa-star').forEach((s, idx) => {
-                        s.style.color = idx < result.new_average ? '#ffd700' : '#e4e5e9';
-                    });
+                
+                if (!response.ok || !result.success) {
+                    throw new Error(result.error || 'Failed to submit rating');
                 }
+                
+                // Update UI state
+                document.querySelector('.rating-count').textContent = 
+                    `(${result.total_ratings} ratings)`;
+                
+                stars.forEach(star => {
+                    star.style.cursor = 'not-allowed';
+                });
+
+                // Update average display
+                stars.forEach((s, idx) => {
+                    s.style.color = idx < result.new_average ? '#ffd700' : '#e4e5e9';
+                });
+
             } catch (error) {
                 console.error('Error:', error);
+                // Revert to original state
+                stars.forEach((s, idx) => {
+                    s.style.color = idx < currentAvg ? '#ffd700' : '#e4e5e9';
+                });
+                alert(error.message);
             } finally {
+                stars.forEach(star => star.classList.remove('processing'));
                 isProcessing = false;
             }
         });
@@ -81,11 +114,12 @@
             {% for i in range(1,6) %}
               <i class="fas fa-star star-rating"
                  data-value="{{ i }}"
-                 style="color: {% if i <= project.average_rating() %}#ffd700{% else %}#e4e5e9{% endif %}; cursor: pointer;">
+                 style="color: {% if i <= project.average_rating() %}#ffd700{% else %}#e4e5e9{% endif %}; 
+                        cursor: {% if session.get('rated_' ~ project.id) %}not-allowed{% else %}pointer{% endif %};">
               </i>
             {% endfor %}
           </div>
-          <small class="text-muted">({{ project.ratings|length }} ratings)</small>
+          <small class="text-muted rating-count">({{ project.ratings|length }} ratings)</small>
         </div>
       </div>
 
@@ -103,16 +137,23 @@
           e.preventDefault();
           const comment = e.target.comment.value.trim();
           if (comment.length < 10) return alert('Comment too short');
-          const res = await fetch(`/comment/{{ project.id }}`, {
-            method: 'POST',
-            headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({comment})
-          });
-          if (res.ok) {
+          
+          try {
+            const res = await fetch(`/comment/{{ project.id }}`, {
+              method: 'POST',
+              headers: {'Content-Type':'application/json'},
+              body: JSON.stringify({comment})
+            });
+            
+            if (!res.ok) {
+              const error = await res.json();
+              throw new Error(error.message || 'Error submitting comment');
+            }
+            
             alert('Thanks! Your comment is awaiting approval.');
             e.target.reset();
-          } else {
-            alert('Error submitting comment');
+          } catch (error) {
+            alert(error.message);
           }
         });
       </script>
@@ -121,7 +162,7 @@
       <h5 class="mt-4">Comments</h5>
       {% for r in project.ratings if r.comment and r.approved %}
         <div class="mb-3 border-bottom pb-2">
-          <small class="text-muted">{{ r.created_at.strftime('%Y-%m-%d') }}</small>
+          <small class="text-muted">{{ r.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
           <p class="mt-1">{{ r.comment }}</p>
         </div>
       {% else %}

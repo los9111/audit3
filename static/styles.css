@@ -112,3 +112,34 @@
 .form-group {
   margin-bottom: 1rem;
 }
+
+/* Rating Animations */
+.star-rating.processing .fa-star {
+  animation: pulse 1.2s infinite;
+  opacity: 0.7;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+/* Disabled Rating State */
+.star-rating.disabled .fa-star {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* Comment Form Styling */
+#commentForm .processing {
+  position: relative;
+  opacity: 0.7;
+}
+
+#commentForm .processing::after {
+  content: "Submitting...";
+  position: absolute;
+  right: 1rem;
+  color: #666;
+}
