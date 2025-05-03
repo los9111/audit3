@@ -83,12 +83,12 @@ class Project(db.Model):
 class Rating(db.Model):
     __tablename__ = 'ratings'
 
-    id         = db.Column(db.Integer, primary_key=True)
-    rating     = db.Column(db.Integer, nullable=True)      # ← nullable=True now
+    id = db.Column(db.Integer, primary_key=True)
+    rating = db.Column(db.Integer, nullable=True)  # ← Keep this as nullable
     project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False)
-    comment    = db.Column(db.Text,    nullable=True)
+    comment = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    approved   = db.Column(db.Boolean, default=False, nullable=False)
+    approved = db.Column(db.Boolean, default=False, nullable=False)
 
 
 class AuditLog(db.Model):
