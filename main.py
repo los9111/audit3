@@ -372,6 +372,19 @@ def submit_project():
 def data_protection_policy():
     return render_template('data_policy.html')
 
+@app.route('/comment/<int:project_id>', methods=['POST'])
+def post_comment(project_id):
+    data = request.get_json() or {}
+    text = data.get('comment','').strip()
+    if len(text) < 10:
+        return jsonify(error="Comment too short"), 400
+    new = Rating(rating=None, comment=text,
+                 project_id=project_id, approved=False)
+    db.session.add(new)
+    db.session.commit()
+    return jsonify(success=True), 201
+
+
 @app.route('/search')
 def search():
     query = request.args.get('query','').strip().lower()

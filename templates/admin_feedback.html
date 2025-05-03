@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+
 {% block content %}
 <div class="container mt-4">
   <h2><i class="fas fa-comments"></i> Feedback for “{{ project.project_name }}”</h2>
@@ -7,54 +8,69 @@
   </a>
 
   {% if project.ratings %}
-  <table class="table table-striped">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Rating</th>
-        <th>Comment</th>
-        <th>Submitted At</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for r in project.ratings %}
-      <tr>
-        <td>{{ r.id }}</td>
-        <td>{{ r.rating }}/5</td>
-        <td>{{ r.comment or '-' }}</td>
-        <td>{{ r.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
-        <td>
-          <button class="btn btn-sm btn-danger delete-feedback" data-id="{{ r.id }}">
-            <i class="fas fa-trash"></i>
-          </button>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+    <div class="table-responsive">
+      <table class="table table-striped align-middle">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Rating</th>
+            <th>Comment</th>
+            <th>Submitted At</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in project.ratings %}
+          <tr>
+            <td>{{ r.id }}</td>
+            <td>{{ r.rating }}/5</td>
+            <td>{{ r.comment or '-' }}</td>
+            <td>{{ r.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td>
+              <button class="btn btn-sm btn-danger delete-feedback" data-id="{{ r.id }}">
+                <i class="fas fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   {% else %}
     <div class="alert alert-info">No feedback yet.</div>
   {% endif %}
 </div>
+{% endblock %}
 
 {% block scripts %}
 <script>
-document.querySelectorAll('.delete-feedback').forEach(btn=>{
-  btn.addEventListener('click', async ()=>{
-    if(!confirm('Delete this feedback?')) return;
-    const id = btn.dataset.id;
-    const token = localStorage.getItem('jwtToken');
-    const csrf = document.querySelector('meta[name="csrf-token"]').content;
-    const res = await fetch(`/admin/feedback/${id}`, {
-      method:'DELETE',
-      headers:{
-        'Authorization':`Bearer ${token}`,
-        'X-CSRF-TOKEN':csrf
-      },
-      credentials:'include'
+document.addEventListener('DOMContentLoaded', function() {
+  const token = localStorage.getItem('jwtToken');
+  const csrf  = document.querySelector('meta[name="csrf-token"]').content;
+
+  document.querySelectorAll('.delete-feedback').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete this feedback?')) return;
+      const id = btn.dataset.id;
+
+      const res = await fetch(`/admin/feedback/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'X-CSRF-TOKEN': csrf
+        }
+      });
+
+      if (res.ok) {
+        btn.closest('tr').remove();
+      } else if (res.status === 401) {
+        localStorage.removeItem('jwtToken');
+        window.location.href = '/admin/login';
+      } else {
+        alert('Failed to delete feedback');
+      }
     });
-    if(res.ok) btn.closest('tr').remove();
   });
 });
 </script>
