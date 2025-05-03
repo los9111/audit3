@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2><i class="fas fa-chart-bar me-2"></i>Metrics & Exports</h2>
+    <a href="{{ url_for('metrics_export') }}" class="btn btn-outline-success">
+      <i class="fas fa-file-csv"></i> Export Metrics CSV
+    </a>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-md-4">
+      <div class="card text-center">
+        <div class="card-body">
+          <h5>Total Projects</h5>
+          <h2>{{ total }}</h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card text-center">
+        <div class="card-body">
+          <h5>Approved</h5>
+          <h2>{{ approved }}</h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card text-center">
+        <div class="card-body">
+          <h5>Pending</h5>
+          <h2>{{ pending }}</h2>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="my-4">
+
+  <h4>Projects by Trust</h4>
+  <table class="table table-sm">
+    <thead>
+      <tr><th>Trust</th><th>Count</th></tr>
+    </thead>
+    <tbody>
+      {% for trust, cnt in trust_counts %}
+      <tr>
+        <td>{{ get_trust_name(trust) }}</td>
+        <td>{{ cnt }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h4 class="mt-4">Projects by Specialty</h4>
+  <table class="table table-sm">
+    <thead>
+      <tr><th>Specialty</th><th>Count</th></tr>
+    </thead>
+    <tbody>
+      {% for spec, cnt in spec_counts %}
+      <tr>
+        <td>{{ spec }}</td>
+        <td>{{ cnt }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

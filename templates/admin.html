@@ -2,149 +2,196 @@
 
 {% block scripts %}
 <script>
-    // 3. UPDATE ADMIN TEMPLATE JAVASCRIPT - PUT THIS FIRST
-    document.addEventListener('DOMContentLoaded', function() {
-        // Get tokens
-        const token = localStorage.getItem('jwtToken');
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-    
-        // 4. ADD LOGOUT HANDLER - PUT THIS NEXT
-        const logoutButton = document.getElementById('adminLogout');
-        if (logoutButton) {
-            logoutButton.addEventListener('click', function(e) {
-                e.preventDefault();
-                // Clear tokens and cookies
-                localStorage.removeItem('jwtToken');
-                document.cookie = 'access_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-                window.location.href = '/admin/login';
-            });
-        }
-    
-        // DELETE HANDLER - PUT THIS AFTER LOGOUT
-        document.querySelectorAll('.delete-project').forEach(button => {
-            button.addEventListener('click', async function(e) {
-                if (!token) {
-                    window.location.href = '/admin/login';
-                    return;
-                }
-    
-                const projectId = this.dataset.projectId;
-                const confirmDelete = confirm('Permanently delete this project?');
-                
-                if (confirmDelete) {
-                    try {
-                        const response = await fetch(`/admin/project/${projectId}`, {
-                            method: 'DELETE',
-                            headers: {
-                                'Authorization': `Bearer ${token}`,
-                                'X-CSRF-TOKEN': csrfToken,
-                                'Content-Type': 'application/json'
-                            },
-                            credentials: 'include'
-                        });
-    
-                        if (response.status === 401) {
-                            localStorage.removeItem('jwtToken');
-                            window.location.href = '/admin/login';
-                        }
-                        
-                        if (response.ok) {
-                            this.closest('tr').remove();
-                            showFlashMessage('Project deleted successfully!', 'success');
-                        }
-                    } catch (error) {
-                        console.error('Delete failed:', error);
-                        showFlashMessage('Failed to delete project', 'danger');
-                    }
-                }
-            });
-        });
-    
-        // FLASH MESSAGE HELPER - PUT AT BOTTOM
-        function showFlashMessage(message, type) {
-            const flashDiv = document.createElement('div');
-            flashDiv.className = `alert alert-${type} alert-dismissible fade show mt-3`;
-            flashDiv.innerHTML = `
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
-            document.querySelector('.container').prepend(flashDiv);
-        }
+document.addEventListener('DOMContentLoaded', function() {
+  const token = localStorage.getItem('jwtToken');
+  const csrf = document.querySelector('meta[name="csrf-token"]').content;
+
+  // Logout
+  document.getElementById('adminLogout').onclick = e => {
+    e.preventDefault();
+    localStorage.removeItem('jwtToken');
+    document.cookie = 'access_token=; Path=/; Expires=Thu, 01 Jan 1970';
+    window.location.href = '/admin/login';
+  };
+
+  // Select All
+  document.getElementById('selectAll').onchange = function() {
+    document.querySelectorAll('.selectBox')
+      .forEach(cb => cb.checked = this.checked);
+  };
+
+  // Bulk Apply
+  document.getElementById('bulkApply').onclick = async () => {
+    const action = document.getElementById('bulkActionSelect').value;
+    if (!action) return alert('Choose an action');
+    const ids = Array.from(
+      document.querySelectorAll('.selectBox:checked')
+    ).map(cb => cb.dataset.id);
+    if (!ids.length) return alert('Select at least one');
+
+    if ((action==='delete' && !confirm('Delete selected?')) ||
+        (action==='approve' && !confirm('Approve selected?'))) {
+      return;
+    }
+
+    const res = await fetch('/admin/bulk-action', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'X-CSRF-TOKEN': csrf,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({action, ids})
     });
+    if (res.status===401) {
+      localStorage.removeItem('jwtToken');
+      return window.location.href='/admin/login';
+    }
+    if (!res.ok) throw new Error();
+    if (action==='export') {
+      const blob = await res.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'projects_export.csv';
+      a.click();
+    } else {
+      window.location.reload();
+    }
+  };
+
+  // Single delete
+  document.querySelectorAll('.delete-project').forEach(btn => {
+    btn.onclick = async () => {
+      const id = btn.dataset.projectId;
+      if (!confirm('Permanently delete?')) return;
+      try {
+        const res = await fetch(`/admin/project/${id}`, {
+          method:'DELETE',
+          credentials:'include',
+          headers:{
+            'Authorization':`Bearer ${token}`,
+            'X-CSRF-TOKEN':csrf,
+            'Content-Type':'application/json'
+          }
+        });
+        if (res.ok) btn.closest('tr').remove();
+        else throw new Error();
+      } catch {
+        alert('Delete failed');
+      }
+    };
+  });
+});
 </script>
 {% endblock %}
 
 {% block content %}
 <div class="container mt-4">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-            <div class="alert alert-{{ category }} alert-dismissible fade show">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat,msg in messages %}
+      <div class="alert alert-{{cat}} alert-dismissible fade show">
+        {{msg}}
+        <button class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endwith %}
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>
+      <i class="fas fa-user-shield me-2"></i>Admin Portal
+      <small class="text-muted fs-5">({{current_user.username}})</small>
+    </h2>
+    <div>
+      <a href="{{ url_for('metrics') }}" class="btn btn-outline-info me-2">
+        <i class="fas fa-chart-bar"></i> Metrics
+      </a>
+      <button id="adminLogout" class="btn btn-outline-danger">
+        <i class="fas fa-sign-out-alt"></i> Logout
+      </button>
+    </div>
+  </div>
+
+  <!-- Bulk toolbar -->
+  <div class="d-flex mb-2">
+    <select id="bulkActionSelect" class="form-select w-auto me-2">
+      <option value="">Bulk Actions…</option>
+      <option value="approve">Approve Selected</option>
+      <option value="delete">Delete Selected</option>
+      <option value="export">Export Selected</option>
+    </select>
+    <button id="bulkApply" class="btn btn-primary">Apply</button>
+  </div>
+
+  <div class="card shadow">
+    <div class="card-header bg-primary text-white">
+      <i class="fas fa-project-diagram me-2"></i>Manage Projects
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th><input type="checkbox" id="selectAll"></th>
+              <th>ID</th><th>Name</th><th>Hospital</th>
+              <th>Specialty</th><th>Submitted</th>
+              <th>Approved?</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in projects %}
+            <tr>
+              <td>
+                <input class="selectBox" type="checkbox" data-id="{{p.id}}">
+              </td>
+              <td>{{p.id}}</td>
+              <td>
+                <a href="{{ url_for('view_project_slug',
+                    project_type=p.project_type, slug=p.slug) }}">
+                  {{p.project_name}}
+                </a>
+              </td>
+              <td>{{ get_trust_name(p.hospital) }}</td>
+              <td>{{p.specialty}}</td>
+              <td>{{p.date_added.strftime('%Y-%m-%d')}}</td>
+              <td>
+                {% if p.approved %}
+                  <span class="badge bg-success">Yes</span>
+                {% else %}
+                  <span class="badge bg-secondary">No</span>
+                {% endif %}
+              </td>
+              <td>
+                <a href="{{ url_for('edit_project', id=p.id) }}"
+                   class="btn btn-sm btn-outline-secondary">
+                  <i class="fas fa-edit"></i>
+                </a>
+                {% if not p.approved %}
+                <form action="{{ url_for('approve_project', id=p.id) }}"
+                      method="POST" style="display:inline-block">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn btn-sm btn-success">
+                    <i class="fas fa-check"></i>
+                  </button>
+                </form>
+                {% endif %}
+                <button class="btn btn-sm btn-danger delete-project"
+                        data-project-id="{{p.id}}">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="8" class="text-center text-muted py-4">
+                No projects found.
+              </td>
+            </tr>
             {% endfor %}
-        {% endif %}
-    {% endwith %}
-
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>
-            <i class="fas fa-user-shield me-2"></i>
-            Admin Portal
-            <small class="text-muted fs-5">(Logged in as {{ current_user.username }})</small>
-        </h2>
-        <button id="adminLogout" class="btn btn-outline-danger">
-            <i class="fas fa-sign-out-alt"></i> Logout
-        </button>
+          </tbody>
+        </table>
+      </div>
     </div>
-
-    <div class="card shadow">
-        <div class="card-header bg-primary text-white">
-            <i class="fas fa-projects me-2"></i> Manage Projects
-        </div>
-        
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th>ID</th>
-                            <th>Project Name</th>
-                            <th>Hospital</th>
-                            <th>Specialty</th>
-                            <th>Submitted</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for project in projects %}
-                        <tr>
-                            <td>{{ project.id }}</td>
-                            <td>
-                                <a href="{{ url_for('view_project_slug', project_type=project.project_type, slug=project.slug) }}">
-                                    {{ project.project_name }}
-                                </a>
-                            </td>
-                            <td>{{ project.hospital }}</td>
-                            <td>{{ project.specialty }}</td>
-                            <td>{{ project.date_added.strftime('%Y-%m-%d') }}</td>
-                            <td>
-                                <button class="btn btn-danger btn-sm delete-project" data-project-id="{{ project.id }}">
-                                    <i class="fas fa-trash"></i> Delete
-                                </button>
-                            </td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="6" class="text-center text-muted py-4">
-                                No projects found in the database.
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+  </div>
 </div>
 {% endblock %}

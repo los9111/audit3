@@ -49,7 +49,6 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-Token': "{{ csrf_token() }}"  // Add CSRF token
                 },
                 body: JSON.stringify(formData),
                 credentials: 'include'

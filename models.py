@@ -46,6 +46,11 @@ class Project(db.Model):
     data_classification = db.Column(db.String(20), default='RESTRICTED')
     ratings = db.relationship('Rating', backref='project', lazy=True)
     slug = db.Column(db.String(255), unique=True)
+    approved = db.Column(db.Boolean, default=False, nullable=False)
+    archived = db.Column(db.Boolean, default=False, nullable=False)
+    last_modified_by = db.Column(db.String(80), nullable=True)
+    last_modified_at = db.Column(db.DateTime, nullable=True)
+    audit_logs = db.relationship('AuditLog', backref='project', lazy=True)
     
     def average_rating(self):
         if not self.ratings:
@@ -81,3 +86,13 @@ class Rating(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     rating = db.Column(db.Integer, nullable=False)
     project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False)
+
+class AuditLog(db.Model):
+    __tablename__ = 'audit_logs'
+
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False)
+    admin_username = db.Column(db.String(80), nullable=False)
+    action = db.Column(db.String(20), nullable=False)   # e.g. 'edit', 'delete', 'approve'
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+

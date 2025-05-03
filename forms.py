@@ -11,13 +11,6 @@ def validate_nhs_email(form, field):
         raise ValidationError('Valid NHS emails must end with @nhs.net or @nhs.uk domains')
 
 class ProjectForm(FlaskForm):
-    email = StringField('Email', validators=[
-        DataRequired(message='Please enter your NHS email address'),
-        Email(message='Invalid email format'),
-        validate_nhs_email
-    ])
-
-class ProjectForm(FlaskForm):
     project_name = StringField('Project Name', validators=[
         DataRequired(message='Please enter a project name'),
         Length(max=200, message='Project name cannot exceed 200 characters')

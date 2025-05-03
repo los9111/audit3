@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="card shadow-sm">
+    <div class="card-header bg-primary text-white">
+      <h3 class="mb-0"><i class="fas fa-edit me-2"></i>Edit Project</h3>
+    </div>
+    <div class="card-body">
+      <form method="POST" action="{{ url_for('edit_project', id=project.id) }}">
+        {{ form.hidden_tag() }}
+
+        <div class="row g-3">
+          <!-- Name -->
+          <div class="col-md-6">
+            <label class="form-label">{{ form.project_name.label.text }}</label>
+            {{ form.project_name(class="form-control") }}
+          </div>
+          <!-- Type -->
+          <div class="col-md-6">
+            <label class="form-label">{{ form.project_type.label.text }}</label>
+            {{ form.project_type(class="form-select") }}
+          </div>
+          <!-- Hospital -->
+          <div class="col-md-6">
+            <label class="form-label">{{ form.hospital.label.text }}</label>
+            {{ form.hospital(class="form-select") }}
+          </div>
+          <!-- Year -->
+          <div class="col-md-6">
+            <label class="form-label">{{ form.year.label.text }}</label>
+            {{ form.year(class="form-control") }}
+          </div>
+          <!-- Specialty -->
+          <div class="col-md-6">
+            <label class="form-label">{{ form.specialty.label.text }}</label>
+            {{ form.specialty(class="form-select") }}
+          </div>
+          <!-- Guidelines -->
+          <div class="col-md-6">
+            <label class="form-label">{{ form.guidelines.label.text }}</label>
+            {{ form.guidelines(class="form-control") }}
+          </div>
+          <!-- Background -->
+          <div class="col-12">
+            <label class="form-label">{{ form.background.label.text }}</label>
+            {{ form.background(class="form-control", rows="4") }}
+          </div>
+          <!-- Aims -->
+          <div class="col-md-6">
+            <label class="form-label">{{ form.aims.label.text }}</label>
+            {{ form.aims(class="form-control", rows="2") }}
+          </div>
+          <!-- Objectives -->
+          <div class="col-md-6">
+            <label class="form-label">{{ form.objectives.label.text }}</label>
+            {{ form.objectives(class="form-control", rows="2") }}
+          </div>
+          <!-- Keywords -->
+          <div class="col-md-6">
+            <label class="form-label">{{ form.keywords.label.text }}</label>
+            {{ form.keywords(class="form-control") }}
+            <div class="form-text">Comma-separated</div>
+          </div>
+          <!-- Data Protection -->
+          <div class="col-12">
+            <div class="form-check">
+              {{ form.data_protection(class="form-check-input") }}
+              <label class="form-check-label">{{ form.data_protection.label.text }}</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4 text-end">
+          <a href="{{ url_for('admin_portal') }}" class="btn btn-outline-secondary me-2">
+            <i class="fas fa-arrow-left"></i> Cancel
+          </a>
+          <button type="submit" class="btn btn-success">
+            <i class="fas fa-save me-1"></i> Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
