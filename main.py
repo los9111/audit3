@@ -373,16 +373,32 @@ def data_protection_policy():
     return render_template('data_policy.html')
 
 @app.route('/comment/<int:project_id>', methods=['POST'])
+@csrf.exempt
 def post_comment(project_id):
     data = request.get_json() or {}
     text = data.get('comment','').strip()
     if len(text) < 10:
         return jsonify(error="Comment too short"), 400
-    new = Rating(rating=None, comment=text,
-                 project_id=project_id, approved=False)
+
+    new = Rating(rating=None,
+                 comment=text,
+                 project_id=project_id,
+                 approved=False)
     db.session.add(new)
     db.session.commit()
     return jsonify(success=True), 201
+
+
+@app.route('/admin/feedback/<int:rating_id>/approve', methods=['POST'])
+@jwt_required()
+def approve_feedback(rating_id):
+    user = User.query.filter_by(username=get_jwt_identity()).first()
+    if not user or user.role != 'admin':
+        return jsonify({'error':'Admin privileges required'}), 403
+    r = Rating.query.get_or_404(rating_id)
+    r.approved = True
+    db.session.commit()
+    return ('',204)
 
 
 @app.route('/search')

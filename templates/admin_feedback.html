@@ -2,12 +2,37 @@
 
 {% block content %}
 <div class="container mt-4">
+
   <h2><i class="fas fa-comments"></i> Feedback for “{{ project.project_name }}”</h2>
   <a href="{{ url_for('admin_portal') }}" class="btn btn-sm btn-outline-primary mb-3">
     <i class="fas fa-arrow-left"></i> Back to Admin
   </a>
 
-  {% if project.ratings %}
+  {# Tabs for Approved vs Pending #}
+  {% set show_pending = request.args.get('filter') == 'pending' %}
+  <ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
+      <a class="nav-link {% if not show_pending %}active{% endif %}"
+         href="{{ url_for('feedback_panel', project_id=project.id) }}">
+        Approved
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {% if show_pending %}active{% endif %}"
+         href="{{ url_for('feedback_panel', project_id=project.id, filter='pending') }}">
+        Pending
+      </a>
+    </li>
+  </ul>
+
+  {% set comments = project.ratings | selectattr('comment') %}
+  {% if show_pending %}
+    {% set comments = comments | selectattr('approved', 'equalto', False) | list %}
+  {% else %}
+    {% set comments = comments | selectattr('approved', 'equalto', True) | list %}
+  {% endif %}
+
+  {% if comments %}
     <div class="table-responsive">
       <table class="table table-striped align-middle">
         <thead>
@@ -20,14 +45,29 @@
           </tr>
         </thead>
         <tbody>
-          {% for r in project.ratings %}
+          {% for r in comments %}
           <tr>
             <td>{{ r.id }}</td>
-            <td>{{ r.rating }}/5</td>
-            <td>{{ r.comment or '-' }}</td>
+            <td>
+              {% if r.rating %}
+                {{ r.rating }}/5
+              {% else %}
+                <em>—</em>
+              {% endif %}
+            </td>
+            <td>{{ r.comment }}</td>
             <td>{{ r.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
             <td>
-              <button class="btn btn-sm btn-danger delete-feedback" data-id="{{ r.id }}">
+              {% if show_pending %}
+                {# Approve button #}
+                <button class="btn btn-sm btn-success approve-feedback me-1"
+                        data-id="{{ r.id }}">
+                  <i class="fas fa-check"></i>
+                </button>
+              {% endif %}
+              {# Always allow delete #}
+              <button class="btn btn-sm btn-danger delete-feedback"
+                      data-id="{{ r.id }}">
                 <i class="fas fa-trash"></i>
               </button>
             </td>
@@ -37,7 +77,9 @@
       </table>
     </div>
   {% else %}
-    <div class="alert alert-info">No feedback yet.</div>
+    <div class="alert alert-info">
+      {% if show_pending %}No pending comments.{% else %}No approved comments.{% endif %}
+    </div>
   {% endif %}
 </div>
 {% endblock %}
@@ -48,28 +90,39 @@ document.addEventListener('DOMContentLoaded', function() {
   const token = localStorage.getItem('jwtToken');
   const csrf  = document.querySelector('meta[name="csrf-token"]').content;
 
-  document.querySelectorAll('.delete-feedback').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      if (!confirm('Delete this feedback?')) return;
+  // Approve
+  document.querySelectorAll('.approve-feedback').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      if(!confirm('Approve this comment?')) return;
       const id = btn.dataset.id;
-
-      const res = await fetch(`/admin/feedback/${id}`, {
-        method: 'DELETE',
-        credentials: 'include',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'X-CSRF-TOKEN': csrf
+      const res = await fetch(`/admin/feedback/${id}/approve`, {
+        method:'POST',
+        credentials:'include',
+        headers:{
+          'Authorization':`Bearer ${token}`,
+          'X-CSRF-TOKEN':csrf
         }
       });
+      if(res.ok) btn.closest('tr').remove();
+      else alert('Failed to approve');
+    });
+  });
 
-      if (res.ok) {
-        btn.closest('tr').remove();
-      } else if (res.status === 401) {
-        localStorage.removeItem('jwtToken');
-        window.location.href = '/admin/login';
-      } else {
-        alert('Failed to delete feedback');
-      }
+  // Delete
+  document.querySelectorAll('.delete-feedback').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      if(!confirm('Delete this comment?')) return;
+      const id = btn.dataset.id;
+      const res = await fetch(`/admin/feedback/${id}`, {
+        method:'DELETE',
+        credentials:'include',
+        headers:{
+          'Authorization':`Bearer ${token}`,
+          'X-CSRF-TOKEN':csrf
+        }
+      });
+      if(res.ok) btn.closest('tr').remove();
+      else alert('Failed to delete');
     });
   });
 });
