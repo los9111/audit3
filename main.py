@@ -150,22 +150,62 @@ def admin_portal():
         if not user or user.role != 'admin':
             return jsonify({'error': 'Admin privileges required'}), 403
 
-        # single delete
-        if request.method == 'POST' and request.form.get('project_id'):
-            project = Project.query.get_or_404(request.form['project_id'])
-            record_audit(project, username, 'delete')
-            db.session.delete(project)
-            db.session.commit()
-            flash('Project successfully deleted', 'success')
+        # Get count of pending comments
+        pending_comments = Comment.query.filter_by(approved=False).count()
 
-        projects = Project.query.order_by(Project.date_added.desc()).all()
-        return render_template('admin.html',
+        # Get all projects with pending comments
+        projects_with_pending = db.session.query(
+            Project.id,
+            Project.project_name,
+            func.count(Comment.id).label('pending_count')
+        ).join(Comment).filter(
+            Comment.approved == False
+        ).group_by(Project.id).all()
+
+        # Rest of your existing admin portal code...
+        
+        return render_template(
+            'admin.html',
             projects=projects,
+            pending_comments=pending_comments,
+            projects_with_pending=projects_with_pending,
             current_user=user
         )
-    except Exception as e:
-        app.logger.error(f"Admin portal error: {e}")
-        return jsonify({'error': 'Server error loading admin portal'}), 500
+    
+@app.route('/admin/pending-comments')
+@jwt_required()
+def pending_comments():
+    user = User.query.filter_by(username=get_jwt_identity()).first()
+    if not user or user.role != 'admin':
+        return jsonify({'error': 'Admin privileges required'}), 403
+
+    # Get all pending comments with project info
+    pending = db.session.query(
+        Comment,
+        Project.project_name,
+        Project.id.label('project_id')
+    ).join(Project).filter(
+        Comment.approved == False
+    ).order_by(Comment.created_at.desc()).all()
+
+    return render_template(
+        'admin_pending_comments.html',
+        pending_comments=pending
+    )   
+
+
+@app.route('/admin/comment/<int:comment_id>/approve', methods=['POST'])
+@jwt_required()
+def approve_comment(comment_id):
+    user = User.query.filter_by(username=get_jwt_identity()).first()
+    if not user or user.role != 'admin':
+        return jsonify({'error': 'Admin privileges required'}), 403
+
+    comment = Comment.query.get_or_404(comment_id)
+    comment.approved = True
+    db.session.commit()
+
+    return jsonify({'success': True}), 200
 
 @app.route('/admin/login', methods=['GET','POST'])
 @csrf.exempt

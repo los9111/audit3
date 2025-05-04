@@ -38,14 +38,13 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
   </div>
 
-  {# NEW: pending-comments alert #}
-  {% if pending_comments and pending_comments > 0 %}
-    <div class="alert alert-warning">
-      <i class="fas fa-comments me-1"></i>
-      You have <strong>{{ pending_comments }}</strong> comment{{ pending_comments>1 and 's' }} pending approval.
-      <a href="{{ url_for('feedback_panel', project_id=0, filter='pending') }}" class="alert-link">
-        Review them here
-      </a>.
+  {# Pending comments alert - Updated #}
+  {% if pending_comments > 0 %}
+    <div class="alert alert-warning alert-dismissible fade show">
+      <i class="fas fa-comments me-2"></i>
+      You have <strong>{{ pending_comments }}</strong> comment{{ pending_comments > 1 and 's' or '' }} awaiting approval.
+      <a href="{{ url_for('pending_comments') }}" class="alert-link">Review them now</a>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
   {% endif %}
 
@@ -70,9 +69,14 @@ document.addEventListener('DOMContentLoaded', function() {
           <thead class="table-light">
             <tr>
               <th><input type="checkbox" id="selectAll"></th>
-              <th>ID</th><th>Name</th><th>Hospital</th>
-              <th>Specialty</th><th>Submitted</th>
-              <th>Approved?</th><th>Actions</th>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Hospital</th>
+              <th>Specialty</th>
+              <th>Submitted</th>
+              <th>Approved?</th>
+              <th>Pending</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -94,6 +98,14 @@ document.addEventListener('DOMContentLoaded', function() {
                   <span class="badge bg-success">Yes</span>
                 {% else %}
                   <span class="badge bg-secondary">No</span>
+                {% endif %}
+              </td>
+              <td>
+                {% set project_pending = projects_with_pending|selectattr('id', 'equalto', p.id)|list %}
+                {% if project_pending %}
+                  <span class="badge bg-warning text-dark" title="{{ project_pending[0].pending_count }} pending comments">
+                    {{ project_pending[0].pending_count }} <i class="fas fa-comment"></i>
+                  </span>
                 {% endif %}
               </td>
               <td>
@@ -126,7 +138,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </tr>
             {% else %}
             <tr>
-              <td colspan="8" class="text-center text-muted py-4">
+              <td colspan="9" class="text-center text-muted py-4">
                 No projects found.
               </td>
             </tr>
