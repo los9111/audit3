@@ -26,7 +26,7 @@ from slugify import slugify  # pip install python-slugify
 # Local imports
 from database import db
 from forms import ProjectForm
-from models import Project, Rating, User, AuditLog
+from models import Project, Rating, User, AuditLog, Comment
 from config import (
     NHS_TRUSTS, MEDICAL_SPECIALTIES,
     SECRET_KEY, RECAPTCHA_PUBLIC_KEY, RECAPTCHA_PRIVATE_KEY
@@ -327,7 +327,25 @@ def metrics_export():
 @jwt_required()
 def feedback_panel(project_id):
     project = Project.query.get_or_404(project_id)
-    return render_template('admin_feedback.html', project=project)
+    show_pending = request.args.get('filter') == 'pending'
+    
+    if show_pending:
+        comments = Comment.query.filter_by(
+            project_id=project.id,
+            approved=False
+        ).order_by(Comment.created_at.desc()).all()
+    else:
+        comments = Comment.query.filter_by(
+            project_id=project.id,
+            approved=True
+        ).order_by(Comment.created_at.desc()).all()
+    
+    return render_template(
+        'admin_feedback.html',
+        project=project,
+        comments=comments,
+        show_pending=show_pending
+    )
 
 @app.route('/admin/feedback/<int:rating_id>', methods=['DELETE'])
 @jwt_required()
@@ -343,10 +361,23 @@ def delete_feedback(rating_id):
 @app.route('/admin/feedback/<int:comment_id>/approve', methods=['POST'])
 @jwt_required()
 def approve_comment(comment_id):
+    user = User.query.filter_by(username=get_jwt_identity()).first()
+    if not user or user.role != 'admin':
+        return jsonify({'error':'Admin privileges required'}), 403
+    
     comment = Comment.query.get_or_404(comment_id)
     comment.approved = True
     db.session.commit()
-    return redirect(url_for('feedback_panel', project_id=comment.project_id))
+    
+    # Record audit log
+    db.session.add(AuditLog(
+        project_id=comment.project_id,
+        admin_username=user.username,
+        action=f'approve_comment:{comment_id}'
+    ))
+    db.session.commit()
+    
+    return ('', 204)
 
 @app.route('/submit', methods=['GET','POST'])
 def submit_project():
@@ -389,11 +420,12 @@ def post_comment(project_id):
     if len(text) < 10:
         return jsonify(error="Comment too short"), 400
 
-    new = Rating(rating=None,
-                 comment=text,
-                 project_id=project_id,
-                 approved=False)
-    db.session.add(new)
+    new_comment = Comment(
+        text=text,
+        project_id=project_id,
+        approved=False
+    )
+    db.session.add(new_comment)
     db.session.commit()
     return jsonify(success=True), 201
 

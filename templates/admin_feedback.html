@@ -2,14 +2,11 @@
 
 {% block content %}
 <div class="container mt-4">
-
-  <h2><i class="fas fa-comments"></i> Feedback for “{{ project.project_name }}”</h2>
+  <h2><i class="fas fa-comments"></i> Feedback for "{{ project.project_name }}"</h2>
   <a href="{{ url_for('admin_portal') }}" class="btn btn-sm btn-outline-primary mb-3">
     <i class="fas fa-arrow-left"></i> Back to Admin
   </a>
 
-  {# Tabs for Approved vs Pending #}
-  {% set show_pending = request.args.get('filter') == 'pending' %}
   <ul class="nav nav-tabs mb-3">
     <li class="nav-item">
       <a class="nav-link {% if not show_pending %}active{% endif %}"
@@ -25,50 +22,33 @@
     </li>
   </ul>
 
-  {% set comments = project.ratings | selectattr('comment') %}
-  {% if show_pending %}
-    {% set comments = comments | selectattr('approved', 'equalto', False) | list %}
-  {% else %}
-    {% set comments = comments | selectattr('approved', 'equalto', True) | list %}
-  {% endif %}
-
   {% if comments %}
     <div class="table-responsive">
       <table class="table table-striped align-middle">
         <thead>
           <tr>
             <th>ID</th>
-            <th>Rating</th>
             <th>Comment</th>
             <th>Submitted At</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          {% for r in comments %}
+          {% for comment in comments %}
           <tr>
-            <td>{{ r.id }}</td>
-            <td>
-              {% if r.rating %}
-                {{ r.rating }}/5
-              {% else %}
-                <em>—</em>
-              {% endif %}
-            </td>
-            <td>{{ r.comment }}</td>
-            <td>{{ r.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td>{{ comment.id }}</td>
+            <td>{{ comment.text }}</td>
+            <td>{{ comment.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
             <td>
               {% if show_pending %}
-                {# Approve button #}
-                <button class="btn btn-sm btn-success approve-feedback me-1"
-                        data-id="{{ r.id }}">
-                  <i class="fas fa-check"></i>
+                <button class="btn btn-sm btn-success approve-comment me-1"
+                        data-id="{{ comment.id }}">
+                  <i class="fas fa-check"></i> Approve
                 </button>
               {% endif %}
-              {# Always allow delete #}
-              <button class="btn btn-sm btn-danger delete-feedback"
-                      data-id="{{ r.id }}">
-                <i class="fas fa-trash"></i>
+              <button class="btn btn-sm btn-danger delete-comment"
+                      data-id="{{ comment.id }}">
+                <i class="fas fa-trash"></i> Delete
               </button>
             </td>
           </tr>
@@ -90,17 +70,17 @@ document.addEventListener('DOMContentLoaded', function() {
   const token = localStorage.getItem('jwtToken');
   const csrf  = document.querySelector('meta[name="csrf-token"]').content;
 
-  // Approve
-  document.querySelectorAll('.approve-feedback').forEach(btn=>{
-    btn.addEventListener('click', async ()=>{
+  // Approve comment
+  document.querySelectorAll('.approve-comment').forEach(btn => {
+    btn.addEventListener('click', async () => {
       if(!confirm('Approve this comment?')) return;
       const id = btn.dataset.id;
       const res = await fetch(`/admin/feedback/${id}/approve`, {
-        method:'POST',
-        credentials:'include',
-        headers:{
-          'Authorization':`Bearer ${token}`,
-          'X-CSRF-TOKEN':csrf
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'X-CSRF-TOKEN': csrf
         }
       });
       if(res.ok) btn.closest('tr').remove();
@@ -108,17 +88,17 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 
-  // Delete
-  document.querySelectorAll('.delete-feedback').forEach(btn=>{
-    btn.addEventListener('click', async ()=>{
+  // Delete comment
+  document.querySelectorAll('.delete-comment').forEach(btn => {
+    btn.addEventListener('click', async () => {
       if(!confirm('Delete this comment?')) return;
       const id = btn.dataset.id;
       const res = await fetch(`/admin/feedback/${id}`, {
-        method:'DELETE',
-        credentials:'include',
-        headers:{
-          'Authorization':`Bearer ${token}`,
-          'X-CSRF-TOKEN':csrf
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'X-CSRF-TOKEN': csrf
         }
       });
       if(res.ok) btn.closest('tr').remove();

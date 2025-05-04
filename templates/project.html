@@ -206,18 +206,17 @@
             </div>
 
             <!-- Community Feedback Section -->
-<div class="comments-section mt-5">
-    <div class="card border-primary">
-        <div class="card-header bg-primary text-white">
-            <h4 class="mb-0">
-                <i class="fas fa-comments me-2"></i>
-                Community Feedback
-                <span class="badge bg-light text-primary ms-2">
-                    {% set approved_comments = Comment.query.filter_by(project_id=project.id, approved=True).all() %}
-                    {{ approved_comments|length }} comment{% if approved_comments|length != 1 %}s{% endif %}
-                </span>
-            </h4>
-        </div>
+            <div class="comments-section mt-5">
+                <div class="card border-primary">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">
+                            <i class="fas fa-comments me-2"></i>
+                            Community Feedback
+                            <span class="badge bg-light text-primary ms-2">
+                                {{ project.comments|selectattr('approved')|list|length }} comment{% if project.comments|selectattr('approved')|list|length != 1 %}s{% endif %}
+                            </span>
+                        </h4>
+                    </div>
 
                     <!-- Comment Form -->
                     <div class="card-body border-bottom">
@@ -240,36 +239,36 @@
                         </form>
                     </div>
 
-                   <!-- Comments List -->
-        <div class="card-body">
-            {% set approved_comments = Comment.query.filter_by(project_id=project.id, approved=True).all() %}
-            {% if approved_comments %}
-                <div class="nhs-comments-list">
-                    {% for comment in approved_comments %}
-                        <div class="comment-item mb-4 p-3 bg-light rounded">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <small class="text-muted">
-                                    <i class="fas fa-user-md me-1"></i>
-                                    NHS Professional
-                                </small>
-                                <small class="text-muted">
-                                    {{ comment.created_at.strftime('%d %b %Y %H:%M') }}
-                                </small>
+                    <!-- Comments List -->
+                    <div class="card-body">
+                        {% set approved_comments = project.comments|selectattr('approved')|list %}
+                        {% if approved_comments %}
+                            <div class="nhs-comments-list">
+                                {% for comment in approved_comments %}
+                                    <div class="comment-item mb-4 p-3 bg-light rounded">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <small class="text-muted">
+                                                <i class="fas fa-user-md me-1"></i>
+                                                NHS Professional
+                                            </small>
+                                            <small class="text-muted">
+                                                {{ comment.created_at.strftime('%d %b %Y %H:%M') }}
+                                            </small>
+                                        </div>
+                                        <p class="mb-0 preserve-formatting">{{ comment.text }}</p>
+                                    </div>
+                                {% endfor %}
                             </div>
-                            <p class="mb-0 preserve-formatting">{{ comment.text }}</p>
-                        </div>
-                    {% endfor %}
+                        {% else %}
+                            <div class="text-center text-muted py-3">
+                                <i class="fas fa-comment-medical fa-2x mb-2"></i>
+                                <p class="mb-0">No approved comments yet</p>
+                                <small class="text-muted">Your submission will be visible after moderation</small>
+                            </div>
+                        {% endif %}
+                    </div>
                 </div>
-            {% else %}
-                <div class="text-center text-muted py-3">
-                    <i class="fas fa-comment-medical fa-2x mb-2"></i>
-                    <p class="mb-0">No approved comments yet</p>
-                    <small class="text-muted">Your submission will be visible after moderation</small>
-                </div>
-            {% endif %}
-        </div>
-    </div>
-</div>
+            </div>
 
             <!-- Keywords & Engagement -->
             <div class="mt-4">
