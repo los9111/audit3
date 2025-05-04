@@ -51,6 +51,8 @@ class Project(db.Model):
     last_modified_by = db.Column(db.String(80), nullable=True)
     last_modified_at = db.Column(db.DateTime, nullable=True)
     audit_logs = db.relationship('AuditLog', backref='project', lazy=True)
+    comments = db.relationship('Comment', backref='project', lazy=True)
+
     
     def average_rating(self):
         vals = [r.rating for r in self.ratings if r.rating is not None]
@@ -102,13 +104,10 @@ class AuditLog(db.Model):
 
 
 class Comment(db.Model):
-    __tablename__  = 'comments'
-    id             = db.Column(db.Integer, primary_key=True)
-    project_id     = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False)
-    text           = db.Column(db.Text, nullable=False)
-    created_at     = db.Column(db.DateTime, default=datetime.utcnow)
-    approved       = db.Column(db.Boolean, default=False, nullable=False)
-
-# then on Project:
-comments = db.relationship('Comment', backref='project', lazy=True)
+    __tablename__ = 'comments'
+    id = db.Column(db.Integer, primary_key=True)
+    text = db.Column(db.Text, nullable=False)
+    approved = db.Column(db.Boolean, default=False)
+    project_id = db.Column(db.Integer, db.ForeignKey('projects.id'))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 

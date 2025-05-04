@@ -340,6 +340,14 @@ def delete_feedback(rating_id):
     db.session.commit()
     return ('', 204)
 
+@app.route('/admin/feedback/<int:comment_id>/approve', methods=['POST'])
+@jwt_required()
+def approve_comment(comment_id):
+    comment = Comment.query.get_or_404(comment_id)
+    comment.approved = True
+    db.session.commit()
+    return redirect(url_for('feedback_panel', project_id=comment.project_id))
+
 @app.route('/submit', methods=['GET','POST'])
 def submit_project():
     form = ProjectForm()
