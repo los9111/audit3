@@ -32,17 +32,17 @@
 
                     <div class="mb-4">
                         <h4 class="mb-3">Background</h4>
-                        <div class="bg-light p-3 rounded-2">{{ project.background }}</div>
+                        <div class="bg-light p-3 rounded preserve-formatting">{{ project.background|safe }}</div>
                     </div>
-
+                    
                     <div class="row mb-4">
                         <div class="col-md-6">
                             <h4 class="mb-3">Aims</h4>
-                            <div class="bg-light p-3 rounded">{{ project.aims }}</div>
+                            <div class="bg-light p-3 rounded preserve-formatting">{{ project.aims|safe }}</div>
                         </div>
                         <div class="col-md-6">
                             <h4 class="mb-3">Objectives</h4>
-                            <div class="bg-light p-3 rounded">{{ project.objectives }}</div>
+                            <div class="bg-light p-3 rounded preserve-formatting">{{ project.objectives|safe }}</div>
                         </div>
                     </div>
 

@@ -14,6 +14,13 @@
                         <div class="mb-4">
                             <label class="form-label">Project Name</label>
                             {{ form.project_name(class="form-control") }}
+                            {% if form.project_name.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.project_name.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
                         </div>
 
                         <div class="row mb-4">
@@ -39,28 +46,99 @@
                         </div>
 
                         <div class="mb-4">
+                            <label class="form-label">Guidelines Used</label>
+                            {{ form.guidelines(class="form-control") }}
+                        </div>
+
+                        <div class="mb-4">
                             <label class="form-label">Background</label>
                             {{ form.background(class="form-control", rows="4") }}
+                            {% if form.background.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.background.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
                         </div>
 
                         <div class="row mb-4">
                             <div class="col-md-6">
                                 <label class="form-label">Aims</label>
                                 {{ form.aims(class="form-control", rows="3") }}
+                                {% if form.aims.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.aims.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Objectives</label>
                                 {{ form.objectives(class="form-control", rows="3") }}
+                                {% if form.objectives.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.objectives.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
                             </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">Keywords</label>
+                            {{ form.keywords(class="form-control") }}
+                            <small class="text-muted">Comma-separated list of keywords</small>
+                            {% if form.keywords.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.keywords.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">Your NHS Email</label>
+                            {{ form.email(class="form-control") }}
+                            <small class="text-muted">Must be an @nhs.net or @nhs.uk email address</small>
+                            {% if form.email.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.email.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
                         </div>
 
                         <div class="mb-4">
                             <div class="form-check">
                                 {{ form.data_protection(class="form-check-input") }}
                                 <label class="form-check-label">
-                                    I confirm this audit complies with NHS data protection policies
+                                    I confirm this audit complies with NHS data protection policies and
+                                    <a href="{{ url_for('data_protection_policy') }}" target="_blank">GDPR requirements</a>
                                 </label>
+                                {% if form.data_protection.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.data_protection.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
                             </div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <h5><i class="fas fa-info-circle me-2"></i> Data Protection Notice</h5>
+                            <p>By submitting this audit, you confirm that:</p>
+                            <ul>
+                                <li>All patient data has been anonymized</li>
+                                <li>No sensitive personal data is included</li>
+                                <li>The audit complies with your Trust's data protection policies</li>
+                                <li>You have appropriate governance approval</li>
+                            </ul>
                         </div>
 
                         <button type="submit" class="btn btn-primary w-100 py-2">
