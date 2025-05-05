@@ -3,150 +3,273 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  const token = localStorage.getItem('jwtToken');
-  const csrf = document.querySelector('meta[name="csrf-token"]').content;
-  // … your existing bulk-action & delete scripts …
+    const token = localStorage.getItem('jwtToken');
+    const csrf = document.querySelector('meta[name="csrf-token"]').content;
+
+    // Bulk actions
+    document.getElementById('bulkApply').addEventListener('click', async function() {
+        const action = document.getElementById('bulkActionSelect').value;
+        if (!action) return;
+
+        const selected = Array.from(document.querySelectorAll('.selectBox:checked')).map(el => el.dataset.id);
+        if (selected.length === 0) {
+            alert('Please select at least one project');
+            return;
+        }
+
+        if (confirm(`Are you sure you want to ${action} ${selected.length} selected project(s)?`)) {
+            try {
+                const response = await fetch('/admin/bulk-action', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                        'X-CSRF-Token': csrf
+                    },
+                    body: JSON.stringify({
+                        action: action,
+                        ids: selected
+                    })
+                });
+
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    alert('Failed to perform bulk action');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred');
+            }
+        }
+    });
+
+    // Delete project
+    document.querySelectorAll('.delete-project').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const projectId = this.dataset.projectId;
+            if (confirm('Are you sure you want to delete this project?')) {
+                try {
+                    const response = await fetch(`/admin/project/${projectId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'X-CSRF-Token': csrf
+                        }
+                    });
+
+                    if (response.ok) {
+                        window.location.reload();
+                    } else {
+                        alert('Failed to delete project');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('An error occurred');
+                }
+            }
+        });
+    });
+
+    // Select all checkbox
+    document.getElementById('selectAll').addEventListener('change', function() {
+        document.querySelectorAll('.selectBox').forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+    });
+
+    // Admin logout
+    document.getElementById('adminLogout').addEventListener('click', function() {
+        localStorage.removeItem('jwtToken');
+        document.cookie = 'access_token=; Path=/admin; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+        window.location.href = '/';
+    });
+
+    // Real-time pending comments count
+    function updatePendingCommentsCount() {
+        fetch('/admin/pending-comments/count', {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'X-CSRF-Token': csrf
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            const badge = document.getElementById('pendingCommentsBadge');
+            if (badge) {
+                badge.textContent = data.count;
+                
+                // Show/hide the alert based on count
+                const alertDiv = document.getElementById('pendingCommentsAlert');
+                if (data.count > 0) {
+                    if (!alertDiv) {
+                        const newAlert = document.createElement('div');
+                        newAlert.id = 'pendingCommentsAlert';
+                        newAlert.className = 'alert alert-warning alert-dismissible fade show';
+                        newAlert.innerHTML = `
+                            <i class="fas fa-comments me-2"></i>
+                            You have <strong id="pendingCommentsBadge">${data.count}</strong> 
+                            comment${data.count !== 1 ? 's' : ''} awaiting approval.
+                            <a href="{{ url_for('pending_comments') }}" class="alert-link">Review them now</a>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        `;
+                        document.querySelector('.container.mt-4').insertBefore(
+                            newAlert, 
+                            document.querySelector('.d-flex.justify-content-between')
+                        );
+                    }
+                } else if (alertDiv) {
+                    alertDiv.remove();
+                }
+            }
+        })
+        .catch(error => console.error('Error updating pending count:', error));
+    }
+
+    // Initial update and set interval
+    updatePendingCommentsCount();
+    setInterval(updatePendingCommentsCount, 30000); // Update every 30 seconds
 });
 </script>
 {% endblock %}
 
 {% block content %}
 <div class="container mt-4">
+    {# flash messages #}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for cat,msg in messages %}
+            <div class="alert alert-{{cat}} alert-dismissible fade show">
+                {{msg}}
+                <button class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endwith %}
 
-  {# flash messages #}
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% for cat,msg in messages %}
-      <div class="alert alert-{{cat}} alert-dismissible fade show">
-        {{msg}}
-        <button class="btn-close" data-bs-dismiss="alert"></button>
-      </div>
-    {% endfor %}
-  {% endwith %}
-
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>
-      <i class="fas fa-user-shield me-2"></i>Admin Portal
-      <small class="text-muted fs-5">({{ current_user.username }})</small>
-    </h2>
-    <div>
-      <a href="{{ url_for('metrics') }}" class="btn btn-outline-info me-2">
-        <i class="fas fa-chart-bar"></i> Metrics
-      </a>
-      <button id="adminLogout" class="btn btn-outline-danger">
-        <i class="fas fa-sign-out-alt"></i> Logout
-      </button>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>
+            <i class="fas fa-user-shield me-2"></i>Admin Portal
+            <small class="text-muted fs-5">({{ current_user.username }})</small>
+        </h2>
+        <div>
+            <a href="{{ url_for('metrics') }}" class="btn btn-outline-info me-2">
+                <i class="fas fa-chart-bar"></i> Metrics
+            </a>
+            <button id="adminLogout" class="btn btn-outline-danger">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
     </div>
-  </div>
 
-  {# Pending comments alert - Updated #}
-  {% if pending_comments > 0 %}
-    <div class="alert alert-warning alert-dismissible fade show">
-      <i class="fas fa-comments me-2"></i>
-      You have <strong>{{ pending_comments }}</strong> comment{{ pending_comments > 1 and 's' or '' }} awaiting approval.
-      <a href="{{ url_for('pending_comments') }}" class="alert-link">Review them now</a>
-      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-  {% endif %}
+    {# Pending comments alert - Will be updated dynamically #}
+    {% if pending_comments > 0 %}
+        <div id="pendingCommentsAlert" class="alert alert-warning alert-dismissible fade show">
+            <i class="fas fa-comments me-2"></i>
+            You have <strong id="pendingCommentsBadge">{{ pending_comments }}</strong> 
+            comment{{ pending_comments > 1 and 's' or '' }} awaiting approval.
+            <a href="{{ url_for('pending_comments') }}" class="alert-link">Review them now</a>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    {% endif %}
 
-  <!-- Bulk toolbar -->
-  <div class="d-flex mb-2">
-    <select id="bulkActionSelect" class="form-select w-auto me-2">
-      <option value="">Bulk Actions…</option>
-      <option value="approve">Approve Selected</option>
-      <option value="delete">Delete Selected</option>
-      <option value="export">Export Selected</option>
-    </select>
-    <button id="bulkApply" class="btn btn-primary">Apply</button>
-  </div>
+    <!-- Bulk toolbar -->
+    <div class="d-flex mb-2">
+        <select id="bulkActionSelect" class="form-select w-auto me-2">
+            <option value="">Bulk Actions…</option>
+            <option value="approve">Approve Selected</option>
+            <option value="delete">Delete Selected</option>
+            <option value="export">Export Selected</option>
+        </select>
+        <button id="bulkApply" class="btn btn-primary">Apply</button>
+    </div>
 
-  <div class="card shadow">
-    <div class="card-header bg-primary text-white">
-      <i class="fas fa-project-diagram me-2"></i>Manage Projects
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <i class="fas fa-project-diagram me-2"></i>Manage Projects
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th><input type="checkbox" id="selectAll"></th>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Hospital</th>
+                            <th>Specialty</th>
+                            <th>Submitted</th>
+                            <th>Approved?</th>
+                            <th>Pending</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in projects %}
+                        <tr>
+                            <td><input class="selectBox" type="checkbox" data-id="{{p.id}}"></td>
+                            <td>{{p.id}}</td>
+                            <td>
+                                <a href="{{ url_for('view_project_slug',
+                                        project_type=p.project_type, slug=p.slug) }}">
+                                    {{p.project_name}}
+                                </a>
+                            </td>
+                            <td>{{ get_trust_name(p.hospital) }}</td>
+                            <td>{{p.specialty}}</td>
+                            <td>{{p.date_added.strftime('%Y-%m-%d')}}</td>
+                            <td>
+                                {% if p.approved %}
+                                    <span class="badge bg-success">Yes</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">No</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% set project_pending = projects_with_pending|selectattr('id', 'equalto', p.id)|list %}
+                                {% if project_pending %}
+                                    <span class="badge bg-warning text-dark" title="{{ project_pending[0].pending_count }} pending comments">
+                                        {{ project_pending[0].pending_count }} <i class="fas fa-comment"></i>
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <!-- Edit -->
+                                <a href="{{ url_for('edit_project', id=p.id) }}"
+                                   class="btn btn-sm btn-outline-secondary">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <!-- Approve -->
+                                {% if not p.approved %}
+                                <form action="{{ url_for('approve_project', id=p.id) }}"
+                                      method="POST" style="display:inline-block">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button class="btn btn-sm btn-success">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                                <!-- Delete -->
+                                <button class="btn btn-sm btn-danger delete-project"
+                                        data-project-id="{{p.id}}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                <!-- Feedback -->
+                                <a href="{{ url_for('feedback_panel', project_id=p.id) }}"
+                                   class="btn btn-sm btn-outline-info">
+                                    <i class="fas fa-comments"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="9" class="text-center text-muted py-4">
+                                No projects found.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-    <div class="card-body">
-      <div class="table-responsive">
-        <table class="table table-hover align-middle">
-          <thead class="table-light">
-            <tr>
-              <th><input type="checkbox" id="selectAll"></th>
-              <th>ID</th>
-              <th>Name</th>
-              <th>Hospital</th>
-              <th>Specialty</th>
-              <th>Submitted</th>
-              <th>Approved?</th>
-              <th>Pending</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for p in projects %}
-            <tr>
-              <td><input class="selectBox" type="checkbox" data-id="{{p.id}}"></td>
-              <td>{{p.id}}</td>
-              <td>
-                <a href="{{ url_for('view_project_slug',
-                        project_type=p.project_type, slug=p.slug) }}">
-                  {{p.project_name}}
-                </a>
-              </td>
-              <td>{{ get_trust_name(p.hospital) }}</td>
-              <td>{{p.specialty}}</td>
-              <td>{{p.date_added.strftime('%Y-%m-%d')}}</td>
-              <td>
-                {% if p.approved %}
-                  <span class="badge bg-success">Yes</span>
-                {% else %}
-                  <span class="badge bg-secondary">No</span>
-                {% endif %}
-              </td>
-              <td>
-                {% set project_pending = projects_with_pending|selectattr('id', 'equalto', p.id)|list %}
-                {% if project_pending %}
-                  <span class="badge bg-warning text-dark" title="{{ project_pending[0].pending_count }} pending comments">
-                    {{ project_pending[0].pending_count }} <i class="fas fa-comment"></i>
-                  </span>
-                {% endif %}
-              </td>
-              <td>
-                <!-- Edit -->
-                <a href="{{ url_for('edit_project', id=p.id) }}"
-                   class="btn btn-sm btn-outline-secondary">
-                  <i class="fas fa-edit"></i>
-                </a>
-                <!-- Approve -->
-                {% if not p.approved %}
-                <form action="{{ url_for('approve_project', id=p.id) }}"
-                      method="POST" style="display:inline-block">
-                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button class="btn btn-sm btn-success">
-                    <i class="fas fa-check"></i>
-                  </button>
-                </form>
-                {% endif %}
-                <!-- Delete -->
-                <button class="btn btn-sm btn-danger delete-project"
-                        data-project-id="{{p.id}}">
-                  <i class="fas fa-trash"></i>
-                </button>
-                <!-- Feedback -->
-                <a href="{{ url_for('feedback_panel', project_id=p.id) }}"
-                   class="btn btn-sm btn-outline-info">
-                  <i class="fas fa-comments"></i>
-                </a>
-              </td>
-            </tr>
-            {% else %}
-            <tr>
-              <td colspan="9" class="text-center text-muted py-4">
-                No projects found.
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
 </div>
 {% endblock %}

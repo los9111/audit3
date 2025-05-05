@@ -238,6 +238,17 @@ def approve_single_comment(comment_id):
         db.session.rollback()
         app.logger.error(f"Error approving comment: {e}")
         return jsonify({'error': 'Server error approving comment'}), 500
+    
+
+@app.route('/admin/pending-comments/count')
+@jwt_required()
+def pending_comments_count():
+    try:
+        count = Comment.query.filter_by(approved=False).count()
+        return jsonify({'count': count}), 200
+    except Exception as e:
+        app.logger.error(f"Error getting pending comments count: {str(e)}")
+        return jsonify({'error': 'Server error'}), 500    
 
 @app.route('/admin/login', methods=['GET','POST'])
 @csrf.exempt
@@ -484,19 +495,39 @@ def data_protection_policy():
 @app.route('/comment/<int:project_id>', methods=['POST'])
 @csrf.exempt
 def post_comment(project_id):
-    data = request.get_json() or {}
-    text = data.get('comment', '').strip()
-    if len(text) < 10:
-        return jsonify(error="Comment too short"), 400
-
-    new_comment = Comment(
-        text=text,
-        project_id=project_id,
-        approved=False
-    )
-    db.session.add(new_comment)
-    db.session.commit()
-    return jsonify(success=True), 201
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+            
+        text = data.get('comment', '').strip()
+        if len(text) < 10:
+            return jsonify({'error': 'Comment must be at least 10 characters long'}), 400
+            
+        project = Project.query.get_or_404(project_id)
+        
+        new_comment = Comment(
+            text=text,
+            project_id=project.id,
+            approved=False
+        )
+        db.session.add(new_comment)
+        db.session.commit()
+        
+        # Record audit log
+        db.session.add(AuditLog(
+            project_id=project.id,
+            admin_username='system',
+            action=f'new_comment:{new_comment.id}'
+        ))
+        db.session.commit()
+        
+        return jsonify({'success': True}), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error submitting comment: {str(e)}")
+        return jsonify({'error': 'Failed to submit comment'}), 500
 
 @app.route('/admin/feedback/<int:rating_id>/approve', methods=['POST'])
 @jwt_required()

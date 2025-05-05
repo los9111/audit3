@@ -1,5 +1,71 @@
 {% extends "base.html" %}
 
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const commentForm = document.getElementById('commentForm');
+    
+    commentForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const form = e.target;
+        const submitButton = form.querySelector('button[type="submit"]');
+        const originalButtonText = submitButton.innerHTML;
+        
+        // Show loading state
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+        
+        try {
+            const response = await fetch('/comment/{{ project.id }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': "{{ csrf_token() }}"
+                },
+                body: JSON.stringify({
+                    comment: form.comment.value
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                // Show success message
+                const successAlert = document.createElement('div');
+                successAlert.className = 'alert alert-success alert-dismissible fade show';
+                successAlert.innerHTML = `
+                    <i class="fas fa-check-circle me-2"></i>
+                    Thank you! Your comment has been submitted for approval.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                commentForm.parentNode.insertBefore(successAlert, commentForm.nextSibling);
+                
+                // Clear the form
+                form.reset();
+            } else {
+                throw new Error(data.error || 'Failed to submit comment');
+            }
+        } catch (error) {
+            // Show error message
+            const errorAlert = document.createElement('div');
+            errorAlert.className = 'alert alert-danger alert-dismissible fade show';
+            errorAlert.innerHTML = `
+                <i class="fas fa-exclamation-circle me-2"></i>
+                ${error.message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            commentForm.parentNode.insertBefore(errorAlert, commentForm.nextSibling);
+        } finally {
+            // Reset button state
+            submitButton.disabled = false;
+            submitButton.innerHTML = originalButtonText;
+        }
+    });
+});
+</script>
+{% endblock %}
+
 {% block content %}
 <div class="container py-4">
     <div class="row justify-content-center">
@@ -62,13 +128,15 @@
                     <h4 class="mb-4">Comments</h4>
                     
                     <form id="commentForm" class="mb-4">
+                        {{ csrf_token() }}
                         <div class="mb-3">
                             <textarea id="comment" name="comment" 
                                     class="form-control" 
                                     rows="3" 
-                                    placeholder="Add your comment..."></textarea>
+                                    placeholder="Add your comment..."
+                                    required></textarea>
                         </div>
-                        <button class="btn btn-primary">
+                        <button type="submit" class="btn btn-primary">
                             <i class="fas fa-paper-plane me-1"></i>
                             Submit Comment
                         </button>
