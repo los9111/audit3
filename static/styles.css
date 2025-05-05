@@ -2,6 +2,31 @@
   --nhs-blue: #005EB8;
   --nhs-light-blue: #41B6E6;
   --nhs-dark-blue: #003087;
+  --primary: #3a86ff;
+  --primary-light: #ebf3ff;
+  --text: #2d3748;
+  --text-light: #718096;
+  --border: #e2e8f0;
+}
+
+/* Modern card styling */
+.card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.05);
+  transition: all 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+}
+
+/* Button styling */
+.btn {
+  border-radius: 8px;
+  padding: 0.5rem 1.25rem;
+  font-weight: 500;
 }
 
 .btn-primary {
@@ -19,6 +44,14 @@
   color: white;
 }
 
+/* Badge styling */
+.badge {
+  font-weight: 500;
+  padding: 0.35em 0.65em;
+  border-radius: 50rem;
+  font-size: 0.85em;
+}
+
 .hero-section {
   min-height: 70vh;
   display: flex;
@@ -28,12 +61,14 @@
 
 .project-card {
   transition: transform 0.2s, box-shadow 0.2s;
-  border: 1px solid rgba(0,0,0,0.125);
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.05);
 }
 
 .project-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
 }
 
 .star-rating {
@@ -48,22 +83,7 @@
 
 /* Data Protection Section Styling */
 .nhs-data-warning {
-  border-left: 4px solid #005EB8;
-  padding-left: 1rem;
-  margin: 2rem 0;
-}
-
-.nhs-data-warning .alert-warning {
-  border-left: 4px solid #ffc107;
-}
-
-.nhs-data-warning ul {
-  margin: 0.5rem 0 1rem 1rem;
-}
-
-/* Data Protection Section Styling */
-.nhs-data-warning {
-  border-left: 4px solid #005EB8;
+  border-left: 4px solid var(--nhs-blue);
   padding-left: 1rem;
   margin: 2rem 0;
 }
@@ -102,13 +122,13 @@
   direction: rtl;
 }
 
-/* Add this to handle line breaks */
+/* Text formatting */
 .preserve-formatting {
   white-space: pre-line;
   line-height: 1.6;
 }
 
-/* restore Bootstrap-4-style form-group spacing */
+/* Form styling */
 .form-group {
   margin-bottom: 1rem;
 }
@@ -125,7 +145,6 @@
   100% { transform: scale(1); }
 }
 
-/* Disabled Rating State */
 .star-rating.disabled .fa-star {
   cursor: not-allowed;
   opacity: 0.7;

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NHS Audit Repository</title>
+    <title>WhichAudit.com Audit/QIP Repository</title>
     <!-- Use Inter font from Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -64,15 +64,19 @@
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg py-3">
+    <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom">
         <div class="container">
-            <a class="navbar-brand" href="/">
+            <a class="navbar-brand fw-bold" href="/">
                 <i class="fas fa-clipboard-check me-2"></i>
-                NHS Audit Hub
+                <span class="text-primary">Which</span>Audit
             </a>
-            <div class="d-flex">
-                <a href="/submit" class="btn btn-outline-primary me-2">Submit Audit</a>
-                <a href="/random" class="btn btn-primary">Random Audit</a>
+            <div class="d-flex align-items-center">
+                <a href="/submit" class="btn btn-sm btn-outline-secondary me-2">
+                    <i class="fas fa-plus me-1"></i> Submit
+                </a>
+                <a href="/random" class="btn btn-sm btn-primary">
+                    <i class="fas fa-random me-1"></i> Random
+                </a>
             </div>
         </div>
     </nav>
@@ -92,9 +96,9 @@
         {% block content %}{% endblock %}
     </main>
 
-    <footer class="py-5 text-center text-muted">
-        <div class="container">
-            <p>NHS Audit Hub &copy; {{ current_year }} - Helping clinicians improve patient care through better audits</p>
+    <footer class="py-4 border-top">
+        <div class="container text-center text-muted">
+            <p class="mb-0">WhichAudit.com &copy; {{ current_year }} - Helping clinicians improve patient care</p>
         </div>
     </footer>
 

@@ -128,9 +128,13 @@ def record_audit(project, admin_user, action):
 
 # Routes
 
+@app.context_processor
+def inject_current_year():
+    return {'current_year': datetime.now().year}
+
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('index.html', now=datetime.now())
 
 @app.route('/<project_type>/<slug>')
 def view_project_slug(project_type, slug):
