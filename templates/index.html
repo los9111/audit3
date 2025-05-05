@@ -1,26 +1,104 @@
-{% extends "base.html" %}
-
-{% block content %}
-<div class="hero-section text-center py-5">
-    <h1 class="display-4 mb-4">NHS Clinical Audit Repository</h1>
-
-    <form action="/search" method="GET" class="mb-4">
-        <div class="input-group input-group-lg">
-            <input type="text" class="form-control" name="query" 
-                   placeholder="Search audits by specialty, keyword, or hospital...">
-            <button class="btn btn-primary" type="submit">
-                <i class="fas fa-search"></i>
-            </button>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NHS Audit Repository</title>
+    <!-- Use Inter font from Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <style>
+        :root {
+            --primary: #3a86ff;
+            --primary-light: #ebf3ff;
+            --text: #2d3748;
+            --text-light: #718096;
+            --border: #e2e8f0;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            color: var(--text);
+            background-color: #f8fafc;
+            line-height: 1.6;
+        }
+        .navbar {
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .navbar-brand {
+            font-weight: 600;
+            color: var(--text) !important;
+        }
+        .card {
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card:hover {
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        .btn-primary {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+        .btn-outline-primary {
+            color: var(--primary);
+            border-color: var(--primary);
+        }
+        a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+        .badge {
+            font-weight: 500;
+            padding: 5px 10px;
+            border-radius: 20px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg py-3">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-clipboard-check me-2"></i>
+                NHS Audit Hub
+            </a>
+            <div class="d-flex">
+                <a href="/submit" class="btn btn-outline-primary me-2">Submit Audit</a>
+                <a href="/random" class="btn btn-primary">Random Audit</a>
+            </div>
         </div>
-    </form>
+    </nav>
 
-    <div class="d-grid gap-2 d-md-block">
-        <a href="/submit" class="btn btn-outline-primary btn-lg me-md-2">
-            <i class="fas fa-plus-circle"></i> Submit Audit
-        </a>
-        <a href="/random" class="btn btn-outline-primary btn-lg">
-            <i class="fas fa-dice"></i> Feeling Lucky
-        </a>
-    </div>
-</div>
-{% endblock %}
+    <main class="container my-5">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="py-5 text-center text-muted">
+        <div class="container">
+            <p>NHS Audit Hub &copy; {{ now.year }} - Helping clinicians improve patient care through better audits</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

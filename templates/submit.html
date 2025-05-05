@@ -1,152 +1,75 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mt-4">
-  <div class="card shadow-lg">
-    <div class="card-header bg-primary text-white">
-      <h2 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Submit a New Project</h2>
-    </div>
-    
-    <div class="card-body">
-      <form method="POST">
-        {{ form.hidden_tag() }}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body p-5">
+                    <h2 class="mb-4">Submit New Audit</h2>
+                    
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
 
-        <div class="row g-4">
-          <!-- Project Name -->
-          <div class="col-md-6">
-            <label class="form-label">{{ form.project_name.label.text }}</label>
-            {{ form.project_name(class="form-control") }}
-            {% if form.project_name.errors %}
-              <div class="invalid-feedback d-block">
-                {{ form.project_name.errors[0] }}
-              </div>
-            {% endif %}
-          </div>
+                        <div class="mb-4">
+                            <label class="form-label">Project Name</label>
+                            {{ form.project_name(class="form-control") }}
+                        </div>
 
-          <!-- Project Type -->
-          <div class="col-md-6">
-            <label class="form-label">{{ form.project_type.label.text }}</label>
-            {{ form.project_type(class="form-select") }}
-          </div>
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label">Project Type</label>
+                                {{ form.project_type(class="form-select") }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Hospital Trust</label>
+                                {{ form.hospital(class="form-select") }}
+                            </div>
+                        </div>
 
-          <!-- Hospital -->
-          <div class="col-md-6">
-            <label class="form-label">{{ form.hospital.label.text }}</label>
-            {{ form.hospital(class="form-select") }}
-          </div>
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label">Year</label>
+                                {{ form.year(class="form-select") }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Specialty</label>
+                                {{ form.specialty(class="form-select") }}
+                            </div>
+                        </div>
 
-          <!-- Year -->
-          <div class="col-md-6">
-            <label class="form-label">{{ form.year.label.text }}</label>
-            {{ form.year(class="form-select") }}
-          </div>
+                        <div class="mb-4">
+                            <label class="form-label">Background</label>
+                            {{ form.background(class="form-control", rows="4") }}
+                        </div>
 
-          <!-- Specialty -->
-          <div class="col-md-6">
-            <label class="form-label">{{ form.specialty.label.text }}</label>
-            {{ form.specialty(class="form-select") }}
-          </div>
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label">Aims</label>
+                                {{ form.aims(class="form-control", rows="3") }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Objectives</label>
+                                {{ form.objectives(class="form-control", rows="3") }}
+                            </div>
+                        </div>
 
-          <!-- Guidelines -->
-          <div class="col-md-6">
-            <label class="form-label">{{ form.guidelines.label.text }}</label>
-            {{ form.guidelines(class="form-control") }}
-            <div class="form-text">e.g. "NICE Guidelines NG12"</div>
-          </div>
+                        <div class="mb-4">
+                            <div class="form-check">
+                                {{ form.data_protection(class="form-check-input") }}
+                                <label class="form-check-label">
+                                    I confirm this audit complies with NHS data protection policies
+                                </label>
+                            </div>
+                        </div>
 
-          <!-- Background -->
-          <div class="col-12">
-            <label class="form-label">{{ form.background.label.text }}</label>
-            {{ form.background(class="form-control", rows="4") }}
-            {% if form.background.errors %}
-              <div class="invalid-feedback d-block">
-                {{ form.background.errors[0] }}
-              </div>
-            {% endif %}
-          </div>
-
-          <!-- Aims -->
-          <div class="col-md-6">
-            <label class="form-label">{{ form.aims.label.text }}</label>
-            {{ form.aims(class="form-control", rows="3") }}
-            {% if form.aims.errors %}
-              <div class="invalid-feedback d-block">
-                {{ form.aims.errors[0] }}
-              </div>
-            {% endif %}
-          </div>
-
-          <!-- Objectives -->
-          <div class="col-md-6">
-            <label class="form-label">{{ form.objectives.label.text }}</label>
-            {{ form.objectives(class="form-control", rows="3") }}
-            {% if form.objectives.errors %}
-              <div class="invalid-feedback d-block">
-                {{ form.objectives.errors[0] }}
-              </div>
-            {% endif %}
-          </div>
-
-          <!-- Keywords -->
-          <div class="col-md-6">
-            <label class="form-label">{{ form.keywords.label.text }}</label>
-            {{ form.keywords(class="form-control") }}
-            <div class="form-text">Comma-separated (e.g. "safety, audit, guidelines")</div>
-            {% if form.keywords.errors %}
-              <div class="invalid-feedback d-block">
-                {{ form.keywords.errors[0] }}
-              </div>
-            {% endif %}
-          </div>
-
-          <!-- Email -->
-          <div class="col-md-6">
-            <label class="form-label">{{ form.email.label.text }}</label>
-            {{ form.email(class="form-control") }}
-            {% if form.email.errors %}
-              <div class="invalid-feedback d-block">
-                {{ form.email.errors[0] }}
-              </div>
-            {% endif %}
-          </div>
-
-          <!-- Data Protection - Consolidated Section -->
-          <div class="col-12">
-            <div class="card border-primary mb-3">
-              <div class="card-header bg-light">
-                <h5 class="mb-0"><i class="fas fa-shield-alt me-2"></i>Data Protection Compliance</h5>
-              </div>
-              <div class="card-body">
-                <div class="form-check">
-                  {{ form.data_protection(class="form-check-input") }}
-                  <label class="form-check-label fw-bold">{{ form.data_protection.label.text }}</label>
-                  {% if form.data_protection.errors %}
-                    <div class="invalid-feedback d-block">
-                      {{ form.data_protection.errors[0] }}
-                    </div>
-                  {% endif %}
+                        <button type="submit" class="btn btn-primary w-100 py-2">
+                            Submit Audit
+                        </button>
+                    </form>
                 </div>
-                <div class="alert alert-info mt-3">
-                  <p class="mb-2"><strong>By checking this box, you confirm:</strong></p>
-                  <ul class="mb-0">
-                    <li>All patient data has been properly anonymized</li>
-                    <li>No confidential NHS information is included</li>
-                    <li>This submission complies with <a href="{{ url_for('data_protection_policy') }}" class="alert-link">NHS data protection policies</a></li>
-                    <li>You have necessary approvals to share this information</li>
-                  </ul>
-                </div>
-              </div>
             </div>
-          </div>
         </div>
-
-        <div class="mt-4 text-end">
-          <button type="submit" class="btn btn-primary btn-lg">
-            <i class="fas fa-paper-plane me-2"></i>Submit Project
-          </button>
-        </div>
-      </form>
     </div>
-  </div>
 </div>
 {% endblock %}

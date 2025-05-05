@@ -1,313 +1,102 @@
 {% extends "base.html" %}
 
-{% block scripts %}
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const ratingContainer = document.querySelector('.star-rating');
-        let isProcessing = false;
-    
-        ratingContainer.addEventListener('click', async (e) => {
-            if (isProcessing) return;
-            const star = e.target.closest('.fa-star');
-            if (!star) return;
-    
-            isProcessing = true;
-            const rating = parseInt(star.dataset.value);
-            const projectId = {{ project.id }};
-    
-            try {
-                const response = await fetch(`/rate/${projectId}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-Token': "{{ csrf_token() }}"
-                    },
-                    body: JSON.stringify({ rating: rating })
-                });
-    
-                if (!response.ok) throw new Error('Failed to submit rating');
-                
-                const result = await response.json();
-                if (result.success) {
-                    document.querySelectorAll('.fa-star').forEach((s, idx) => {
-                        s.style.color = idx < result.new_average ? '#ffd700' : '#e4e5e9';
-                    });
-                    document.querySelector('.rating-count').textContent = `(${result.total_ratings} ratings)`;
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert(error.message);
-            } finally {
-                isProcessing = false;
-            }
-        });
-
-        // Comment form handling
-        document.getElementById('commentForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const comment = e.target.comment.value.trim();
-            if (comment.length < 10) return alert('Comment must be at least 10 characters');
-            
-            try {
-                const response = await fetch(`/comment/{{ project.id }}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-Token': "{{ csrf_token() }}"
-                    },
-                    body: JSON.stringify({ comment })
-                });
-                
-                if (response.ok) {
-                    alert('Comment submitted for moderation');
-                    e.target.reset();
-                } else {
-                    const error = await response.json();
-                    alert(error.error || 'Failed to submit comment');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Network error');
-            }
-        });
-    });
-</script>
-{% endblock %}
-
 {% block content %}
 <div class="container">
-    <!-- Information Governance Header -->
-    <div class="ig-alert mb-4">
-        <div class="alert {% if project.data_classification == 'RESTRICTED' %}alert-warning{% else %}alert-info{% endif %}">
-            <div class="d-flex align-items-center">
-                <i class="fas fa-shield-alt me-3 fs-4"></i>
-                <div>
-                    <h5 class="mb-1">Data Classification: {{ project.data_classification|upper }}</h5>
-                    <div class="mt-2">
-                        {% if project.data_protection_compliant %}
-                        <span class="badge bg-success">
-                            <i class="fas fa-check-circle me-1"></i> DSPT Compliance Verified
-                        </span>
-                        {% else %}
-                        <span class="badge bg-danger">
-                            <i class="fas fa-exclamation-circle me-1"></i> Compliance Not Verified
-                        </span>
-                        {% endif %}
-                        <span class="badge bg-secondary ms-2">
-                            <i class="fas fa-calendar-check me-1"></i> 
-                            Valid until {{ project.date_archived.strftime('%d %b %Y') if project.date_archived else 'N/A' }}
-                        </span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="nhs-compliance-notice alert alert-dark">
-            <div class="d-flex align-items-center">
-                <i class="fas fa-exclamation-triangle me-3 fs-4"></i>
-                <div>
-                    <h6 class="mb-1">NHS Data Handling Requirements</h6>
-                    <p class="mb-0">This audit contains NHS data - Handle in accordance with 
-                        <a href="{{ url_for('data_protection_policy') }}" class="alert-link">IG Toolkit v3.2</a>
-                        and <a href="#" class="alert-link">GDPR guidelines</a>
-                    </p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Main Project Card -->
-    <div class="card shadow-lg mb-4">
-        <div class="card-header bg-primary text-white">
-            <div class="d-flex justify-content-between align-items-center">
-                <h2 class="mb-0">{{ project.project_name }}</h2>
-                <div class="rating-container">
-                    <div class="star-rating">
-                        {% for i in range(1,6) %}
-                        <i class="fas fa-star fa-lg" 
-                           data-value="{{ i }}"
-                           style="color: {% if i <= project.average_rating() %}#ffd700{% else %}#e4e5e9{% endif %};
-                                  cursor: {% if not session.get('rated_' ~ project.id|string) %}pointer{% else %}default{% endif %};">
-                        </i>
-                        {% endfor %}
-                    </div>
-                    <small class="text-light rating-count">({{ project.ratings|length }} ratings)</small>
-                </div>
-            </div>
-        </div>
-
-        <div class="card-body">
-            <!-- Metadata Grid -->
-            <div class="row g-4 mb-4">
-                <div class="col-md-6">
-                    <div class="d-flex align-items-center mb-3">
-                        <i class="fas fa-hospital fa-fw me-2 text-primary"></i>
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
                         <div>
-                            <h6 class="mb-0">Trust</h6>
-                            <p class="mb-0">{{ get_trust_name(project.hospital) }}</p>
-                        </div>
-                    </div>
-                    <div class="d-flex align-items-center mb-3">
-                        <i class="fas fa-calendar-alt fa-fw me-2 text-primary"></i>
-                        <div>
-                            <h6 class="mb-0">Audit Year</h6>
-                            <p class="mb-0">{{ project.year }}</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="col-md-6">
-                    <div class="d-flex align-items-center mb-3">
-                        <i class="fas fa-stethoscope fa-fw me-2 text-primary"></i>
-                        <div>
-                            <h6 class="mb-0">Specialty</h6>
-                            <p class="mb-0">{{ project.specialty }}</p>
-                        </div>
-                    </div>
-                    <div class="d-flex align-items-center mb-3">
-                        <i class="fas fa-clock fa-fw me-2 text-primary"></i>
-                        <div>
-                            <h6 class="mb-0">Submitted</h6>
-                            <p class="mb-0">{{ project.date_added.strftime('%d %b %Y') }}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Audit Details -->
-            <div class="audit-details">
-                <div class="detail-section mb-4">
-                    <h4 class="border-bottom pb-2 mb-3">
-                        <i class="fas fa-book-open me-2"></i>Guidelines Used
-                    </h4>
-                    <div class="preserve-formatting">{{ project.guidelines or 'No specific guidelines referenced' }}</div>
-                </div>
-
-                <div class="detail-section mb-4">
-                    <h4 class="border-bottom pb-2 mb-3">
-                        <i class="fas fa-search me-2"></i>Background
-                    </h4>
-                    <div class="preserve-formatting">{{ project.background }}</div>
-                </div>
-
-                <div class="detail-section mb-4">
-                    <h4 class="border-bottom pb-2 mb-3">
-                        <i class="fas fa-bullseye me-2"></i>Aims
-                    </h4>
-                    <div class="preserve-formatting">{{ project.aims }}</div>
-                </div>
-
-                <div class="detail-section mb-4">
-                    <h4 class="border-bottom pb-2 mb-3">
-                        <i class="fas fa-tasks me-2"></i>Objectives
-                    </h4>
-                    <div class="preserve-formatting">{{ project.objectives }}</div>
-                </div>
-            </div>
-
-            <!-- Community Feedback Section -->
-            <div class="comments-section mt-5">
-                <div class="card border-primary">
-                    <div class="card-header bg-primary text-white">
-                        <h4 class="mb-0">
-                            <i class="fas fa-comments me-2"></i>
-                            Community Feedback
-                            <span class="badge bg-light text-primary ms-2">
-                                {{ project.comments|selectattr('approved')|list|length }} comment{% if project.comments|selectattr('approved')|list|length != 1 %}s{% endif %}
+                            <span class="badge bg-primary-light text-primary mb-2">
+                                {{ project.project_type|upper }}
                             </span>
-                        </h4>
-                    </div>
-
-                    <!-- Comment Form -->
-                    <div class="card-body border-bottom">
-                        <form id="commentForm" class="mb-4">
-                            <div class="mb-3">
-                                <label for="comment" class="form-label text-primary">
-                                    <i class="fas fa-pencil-alt me-1"></i>
-                                    Add Your Comment
-                                </label>
-                                <textarea id="comment" name="comment" 
-                                        class="form-control" 
-                                        rows="3" 
-                                        placeholder="Share your insights (minimum 10 characters)"
-                                        style="min-height: 100px"></textarea>
+                            <h1 class="mb-2">{{ project.project_name }}</h1>
+                            <div class="text-muted">
+                                <span class="me-3"><i class="fas fa-hospital me-1"></i> {{ get_trust_name(project.hospital) }}</span>
+                                <span class="me-3"><i class="fas fa-calendar me-1"></i> {{ project.year }}</span>
+                                <span><i class="fas fa-stethoscope me-1"></i> {{ project.specialty }}</span>
                             </div>
-                            <button class="btn btn-outline-primary">
-                                <i class="fas fa-paper-plane me-1"></i>
-                                Submit for Moderation
-                            </button>
-                        </form>
-                    </div>
-
-                    <!-- Comments List -->
-                    <div class="card-body">
-                        {% set approved_comments = project.comments|selectattr('approved')|list %}
-                        {% if approved_comments %}
-                            <div class="nhs-comments-list">
-                                {% for comment in approved_comments %}
-                                    <div class="comment-item mb-4 p-3 bg-light rounded">
-                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                            <small class="text-muted">
-                                                <i class="fas fa-user-md me-1"></i>
-                                                NHS Professional
-                                            </small>
-                                            <small class="text-muted">
-                                                {{ comment.created_at.strftime('%d %b %Y %H:%M') }}
-                                            </small>
-                                        </div>
-                                        <p class="mb-0 preserve-formatting">{{ comment.text }}</p>
-                                    </div>
+                        </div>
+                        <div class="text-end">
+                            <div class="star-rating mb-2">
+                                {% for i in range(1,6) %}
+                                <i class="fas fa-star" 
+                                   data-value="{{ i }}"
+                                   style="color: {% if i <= project.average_rating() %}gold{% else %}#e2e8f0{% endif %};
+                                          cursor: pointer;"></i>
                                 {% endfor %}
                             </div>
-                        {% else %}
-                            <div class="text-center text-muted py-3">
-                                <i class="fas fa-comment-medical fa-2x mb-2"></i>
-                                <p class="mb-0">No approved comments yet</p>
-                                <small class="text-muted">Your submission will be visible after moderation</small>
-                            </div>
-                        {% endif %}
+                            <small class="text-muted">{{ project.ratings|length }} ratings</small>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h4 class="mb-3">Background</h4>
+                        <div class="bg-light p-3 rounded">{{ project.background }}</div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h4 class="mb-3">Aims</h4>
+                            <div class="bg-light p-3 rounded">{{ project.aims }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <h4 class="mb-3">Objectives</h4>
+                            <div class="bg-light p-3 rounded">{{ project.objectives }}</div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h4 class="mb-3">Keywords</h4>
+                        <div>
+                            {% for keyword in project.keywords.split(',') %}
+                            <span class="badge bg-primary-light text-primary me-1 mb-1">{{ keyword.strip() }}</span>
+                            {% endfor %}
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Keywords & Engagement -->
-            <div class="mt-4">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5><i class="fas fa-tags me-2"></i>Keywords</h5>
-                    <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#keywordList">
-                        Toggle View
-                    </button>
-                </div>
-                <div id="keywordList" class="collapse show">
-                    {% for keyword in project.keywords.split(',') %}
-                    <span class="badge rounded-pill bg-secondary me-1 mb-1">{{ keyword.strip() }}</span>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-    </div>
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="mb-4">Comments</h4>
+                    
+                    <form id="commentForm" class="mb-4">
+                        <div class="mb-3">
+                            <textarea id="comment" name="comment" 
+                                    class="form-control" 
+                                    rows="3" 
+                                    placeholder="Add your comment..."></textarea>
+                        </div>
+                        <button class="btn btn-primary">
+                            <i class="fas fa-paper-plane me-1"></i>
+                            Submit Comment
+                        </button>
+                    </form>
 
-    <!-- Back Navigation -->
-    <div class="d-flex justify-content-between">
-        <a href="{{ url_for('index') }}" class="btn btn-outline-primary">
-            <i class="fas fa-arrow-left me-2"></i>Back to Home
-        </a>
-        <button class="btn btn-link text-muted" data-bs-toggle="modal" data-bs-target="#dataPolicyModal">
-            <i class="fas fa-info-circle me-1"></i>Data Usage Policy
-        </button>
-    </div>
-</div>
-
-<!-- Data Policy Modal -->
-<div class="modal fade" id="dataPolicyModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title">NHS Data Usage Policy</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                {% include "data_policy.html" %}
+                    <div class="comments-list">
+                        {% for comment in project.comments|selectattr('approved')|list %}
+                        <div class="comment mb-3 p-3 bg-light rounded">
+                            <div class="d-flex justify-content-between mb-2">
+                                <small class="text-muted">
+                                    <i class="fas fa-user me-1"></i>
+                                    NHS Professional
+                                </small>
+                                <small class="text-muted">
+                                    {{ comment.created_at.strftime('%d %b %Y') }}
+                                </small>
+                            </div>
+                            <p>{{ comment.text }}</p>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4 text-muted">
+                            <i class="fas fa-comment-slash fa-2x mb-3"></i>
+                            <p>No comments yet</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
             </div>
         </div>
     </div>
