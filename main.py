@@ -248,7 +248,33 @@ def pending_comments_count():
         return jsonify({'count': count}), 200
     except Exception as e:
         app.logger.error(f"Error getting pending comments count: {str(e)}")
-        return jsonify({'error': 'Server error'}), 500    
+        return jsonify({'error': 'Server error'}), 500
+
+
+@app.route('/admin/comment/<int:comment_id>', methods=['DELETE'])
+@jwt_required()
+def delete_comment(comment_id):
+    try:
+        user = User.query.filter_by(username=get_jwt_identity()).first()
+        if not user or user.role != 'admin':
+            return jsonify({'error': 'Admin privileges required'}), 403
+
+        comment = Comment.query.get_or_404(comment_id)
+        db.session.delete(comment)
+        
+        # Record audit log
+        db.session.add(AuditLog(
+            project_id=comment.project_id,
+            admin_username=user.username,
+            action=f'delete_comment:{comment_id}'
+        ))
+        
+        db.session.commit()
+        return jsonify({'success': True}), 200
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error deleting comment: {str(e)}")
+        return jsonify({'error': 'Failed to delete comment'}), 500            
 
 @app.route('/admin/login', methods=['GET','POST'])
 @csrf.exempt

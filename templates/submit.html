@@ -1,168 +1,150 @@
 {% extends "base.html" %}
 
-{% block scripts %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const commentForm = document.getElementById('commentForm');
-    
-    commentForm.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const form = e.target;
-        const submitButton = form.querySelector('button[type="submit"]');
-        const originalButtonText = submitButton.innerHTML;
-        
-        // Show loading state
-        submitButton.disabled = true;
-        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
-        
-        try {
-            const response = await fetch('/comment/{{ project.id }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-Token': "{{ csrf_token() }}"
-                },
-                body: JSON.stringify({
-                    comment: form.comment.value
-                })
-            });
-            
-            const data = await response.json();
-            
-            if (response.ok) {
-                // Show success message
-                const successAlert = document.createElement('div');
-                successAlert.className = 'alert alert-success alert-dismissible fade show';
-                successAlert.innerHTML = `
-                    <i class="fas fa-check-circle me-2"></i>
-                    Thank you! Your comment has been submitted for approval.
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                `;
-                commentForm.parentNode.insertBefore(successAlert, commentForm.nextSibling);
-                
-                // Clear the form
-                form.reset();
-            } else {
-                throw new Error(data.error || 'Failed to submit comment');
-            }
-        } catch (error) {
-            // Show error message
-            const errorAlert = document.createElement('div');
-            errorAlert.className = 'alert alert-danger alert-dismissible fade show';
-            errorAlert.innerHTML = `
-                <i class="fas fa-exclamation-circle me-2"></i>
-                ${error.message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
-            commentForm.parentNode.insertBefore(errorAlert, commentForm.nextSibling);
-        } finally {
-            // Reset button state
-            submitButton.disabled = false;
-            submitButton.innerHTML = originalButtonText;
-        }
-    });
-});
-</script>
-{% endblock %}
-
 {% block content %}
-<div class="container py-4">
+<div class="container">
     <div class="row justify-content-center">
-        <div class="col-lg-9">
-            <div class="card mb-4">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-start mb-4">
-                        <div>
-                            <span class="badge bg-primary bg-opacity-10 text-primary mb-2">
-                                {{ project.project_type|upper }}
-                            </span>
-                            <h1 class="mb-2">{{ project.project_name }}</h1>
-                            <div class="text-muted mb-3">
-                                <span class="me-3"><i class="fas fa-hospital me-1"></i> {{ get_trust_name(project.hospital) }}</span>
-                                <span class="me-3"><i class="fas fa-calendar me-1"></i> {{ project.year }}</span>
-                                <span><i class="fas fa-stethoscope me-1"></i> {{ project.specialty }}</span>
-                            </div>
-                        </div>
-                        <div class="text-end">
-                            <div class="star-rating mb-2">
-                                {% for i in range(1,6) %}
-                                <i class="fas fa-star fa-lg" 
-                                   data-value="{{ i }}"
-                                   style="color: {% if i <= project.average_rating() %}gold{% else %}#e2e8f0{% endif %}"></i>
-                                {% endfor %}
-                            </div>
-                            <small class="text-muted">{{ project.ratings|length }} ratings</small>
-                        </div>
-                    </div>
-
-                    <div class="mb-4">
-                        <h4 class="mb-3">Background</h4>
-                        <div class="bg-light p-3 rounded preserve-formatting">{{ project.background|safe }}</div>
-                    </div>
-                    
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <h4 class="mb-3">Aims</h4>
-                            <div class="bg-light p-3 rounded preserve-formatting">{{ project.aims|safe }}</div>
-                        </div>
-                        <div class="col-md-6">
-                            <h4 class="mb-3">Objectives</h4>
-                            <div class="bg-light p-3 rounded preserve-formatting">{{ project.objectives|safe }}</div>
-                        </div>
-                    </div>
-
-                    <div class="mb-4">
-                        <h4 class="mb-3">Keywords</h4>
-                        <div>
-                            {% for keyword in project.keywords.split(',') %}
-                            <span class="badge bg-primary-light text-primary me-1 mb-1">{{ keyword.strip() }}</span>
-                            {% endfor %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
+        <div class="col-lg-8">
             <div class="card">
-                <div class="card-body">
-                    <h4 class="mb-4">Comments</h4>
+                <div class="card-body p-5">
+                    <h2 class="mb-4">Submit New Audit</h2>
                     
-                    <form id="commentForm" class="mb-4">
-                        {{ csrf_token() }}
-                        <div class="mb-3">
-                            <textarea id="comment" name="comment" 
-                                    class="form-control" 
-                                    rows="3" 
-                                    placeholder="Add your comment..."
-                                    required></textarea>
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+
+                        <div class="mb-4">
+                            <label class="form-label">Project Name</label>
+                            {{ form.project_name(class="form-control") }}
+                            {% if form.project_name.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.project_name.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
                         </div>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-paper-plane me-1"></i>
-                            Submit Comment
+
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label">Project Type</label>
+                                {{ form.project_type(class="form-select") }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Hospital Trust</label>
+                                {{ form.hospital(class="form-select") }}
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label">Year</label>
+                                {{ form.year(class="form-select") }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Specialty</label>
+                                {{ form.specialty(class="form-select") }}
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">Guidelines Used</label>
+                            {{ form.guidelines(class="form-control") }}
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">Background</label>
+                            {{ form.background(class="form-control", rows="4") }}
+                            {% if form.background.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.background.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label">Aims</label>
+                                {{ form.aims(class="form-control", rows="3") }}
+                                {% if form.aims.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.aims.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Objectives</label>
+                                {{ form.objectives(class="form-control", rows="3") }}
+                                {% if form.objectives.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.objectives.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">Keywords</label>
+                            {{ form.keywords(class="form-control") }}
+                            <small class="text-muted">Comma-separated list of keywords</small>
+                            {% if form.keywords.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.keywords.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">Your NHS Email</label>
+                            {{ form.email(class="form-control") }}
+                            <small class="text-muted">Must be an @nhs.net or @nhs.uk email address</small>
+                            {% if form.email.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.email.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="form-check">
+                                {{ form.data_protection(class="form-check-input") }}
+                                <label class="form-check-label">
+                                    I confirm this audit complies with NHS data protection policies and
+                                    <a href="{{ url_for('data_protection_policy') }}" target="_blank">GDPR requirements</a>
+                                </label>
+                                {% if form.data_protection.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.data_protection.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <h5><i class="fas fa-info-circle me-2"></i> Data Protection Notice</h5>
+                            <p>By submitting this audit, you confirm that:</p>
+                            <ul>
+                                <li>All patient data has been anonymized</li>
+                                <li>No sensitive personal data is included</li>
+                                <li>The audit complies with your Trust's data protection policies</li>
+                                <li>You have appropriate governance approval</li>
+                            </ul>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 py-2">
+                            Submit Audit
                         </button>
                     </form>
-
-                    <div class="comments-list">
-                        {% for comment in project.comments|selectattr('approved')|list %}
-                        <div class="comment mb-3 p-3 bg-light rounded">
-                            <div class="d-flex justify-content-between mb-2">
-                                <small class="text-muted">
-                                    <i class="fas fa-user me-1"></i>
-                                    NHS Professional
-                                </small>
-                                <small class="text-muted">
-                                    {{ comment.created_at.strftime('%d %b %Y') }}
-                                </small>
-                            </div>
-                            <p>{{ comment.text }}</p>
-                        </div>
-                        {% else %}
-                        <div class="text-center py-4 text-muted">
-                            <i class="fas fa-comment-slash fa-2x mb-3"></i>
-                            <p>No comments yet</p>
-                        </div>
-                        {% endfor %}
-                    </div>
                 </div>
             </div>
         </div>

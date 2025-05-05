@@ -110,4 +110,6 @@ class Comment(db.Model):
     approved = db.Column(db.Boolean, default=False)
     project_id = db.Column(db.Integer, db.ForeignKey('projects.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    project = db.relationship('Project', backref=db.backref('comments', lazy=True))
+
 

@@ -128,7 +128,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <h4 class="mb-4">Comments</h4>
                     
                     <form id="commentForm" class="mb-4">
-                        {{ csrf_token() }}
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div class="mb-3">
                             <textarea id="comment" name="comment" 
                                     class="form-control" 
@@ -143,24 +143,26 @@ document.addEventListener('DOMContentLoaded', function() {
                     </form>
 
                     <div class="comments-list">
-                        {% for comment in project.comments|selectattr('approved')|list %}
-                        <div class="comment mb-3 p-3 bg-light rounded">
-                            <div class="d-flex justify-content-between mb-2">
-                                <small class="text-muted">
-                                    <i class="fas fa-user me-1"></i>
-                                    NHS Professional
-                                </small>
-                                <small class="text-muted">
-                                    {{ comment.created_at.strftime('%d %b %Y') }}
-                                </small>
+                        {% for comment in project.comments %}
+                            {% if comment.approved and comment.text %}
+                            <div class="comment mb-3 p-3 bg-light rounded">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-user me-1"></i>
+                                        NHS Professional
+                                    </small>
+                                    <small class="text-muted">
+                                        {{ comment.created_at.strftime('%d %b %Y') }}
+                                    </small>
+                                </div>
+                                <p class="preserve-formatting">{{ comment.text }}</p>
                             </div>
-                            <p>{{ comment.text }}</p>
-                        </div>
+                            {% endif %}
                         {% else %}
-                        <div class="text-center py-4 text-muted">
-                            <i class="fas fa-comment-slash fa-2x mb-3"></i>
-                            <p>No comments yet</p>
-                        </div>
+                            <div class="text-center py-4 text-muted">
+                                <i class="fas fa-comment-slash fa-2x mb-3"></i>
+                                <p>No comments yet</p>
+                            </div>
                         {% endfor %}
                     </div>
                 </div>
