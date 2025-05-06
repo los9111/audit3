@@ -124,11 +124,14 @@ def initialize_admin():
 def record_audit(project, admin_user, action):
     project.last_modified_by = admin_user
     project.last_modified_at = datetime.utcnow()
-    db.session.add(AuditLog(
-        project_id=project.id,
+    audit_log = AuditLog(
+        project_id=project.id,  # Make sure project_id is set
         admin_username=admin_user,
-        action=action
-    ))
+        action=action,
+        timestamp=datetime.utcnow()
+    )
+    db.session.add(audit_log)
+    
 
 # Routes
 
@@ -330,63 +333,114 @@ def approve_project(id):
 @app.route('/admin/bulk-action', methods=['POST'])
 @jwt_required()
 def bulk_action():
-    user = User.query.filter_by(username=get_jwt_identity()).first()
-    if not user or user.role != 'admin':
-        return jsonify({'error': 'Admin privileges required'}), 403
+    try:
+        user = User.query.filter_by(username=get_jwt_identity()).first()
+        if not user or user.role != 'admin':
+            return jsonify({'error': 'Admin privileges required'}), 403
 
-    data = request.get_json() or {}
-    action = data.get('action')
-    ids = data.get('ids', [])
-    if not action or not isinstance(ids, list):
-        return jsonify({'error': 'Invalid request'}), 400
-
-    projects = Project.query.filter(Project.id.in_(ids)).all()
-
-    if action == 'approve':
-        for p in projects:
-            p.approved = True
-            record_audit(p, user.username, 'approve')
-    elif action == 'delete':
-        for p in projects:
-            record_audit(p, user.username, 'delete')
-            db.session.delete(p)
-    elif action == 'export':
-        from io import StringIO
-        import csv
-        si = StringIO()
-        w = csv.writer(si)
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+            
+        action = data.get('action')
+        ids = data.get('ids', [])
         
-        # Write header
-        w.writerow([
-            'ID', 'Name', 'Type', 'Hospital', 'Year',
-            'Specialty', 'Guidelines', 'Background',
-            'Aims', 'Objectives', 'Keywords', 'Approved',
-            'Date Added', 'Last Modified By', 'Last Modified At'
-        ])
+        if not action or not isinstance(ids, list):
+            return jsonify({'error': 'Invalid request'}), 400
+
+        projects = Project.query.filter(Project.id.in_(ids)).all()
         
-        # Write data
-        for p in projects:
+        if not projects:
+            return jsonify({'error': 'No projects found'}), 404
+
+        if action == 'approve':
+            for p in projects:
+                p.approved = True
+                db.session.add(AuditLog(
+                    project_id=p.id,
+                    admin_username=user.username,
+                    action='approve',
+                    timestamp=datetime.utcnow()
+                ))
+                
+        elif action == 'delete':
+            # Just return success here - actual deletion happens after confirmation
+            return jsonify({
+                'confirm': True,
+                'count': len(projects),
+                'message': f'Are you sure you want to delete {len(projects)} project(s)?'
+            }), 200
+                
+        elif action == 'export':
+            from io import StringIO
+            import csv
+            si = StringIO()
+            w = csv.writer(si)
+            
             w.writerow([
-                p.id, p.project_name, p.project_type,
-                get_trust_name(p.hospital), p.year,
-                get_specialty_name(p.specialty), p.guidelines,
-                p.background, p.aims, p.objectives,
-                p.keywords, 'Yes' if p.approved else 'No',
-                p.date_added.strftime('%Y-%m-%d %H:%M'),
-                p.last_modified_by or '',
-                p.last_modified_at.strftime('%Y-%m-%d %H:%M') if p.last_modified_at else ''
+                'ID', 'Name', 'Type', 'Hospital', 'Year',
+                'Specialty', 'Guidelines', 'Background',
+                'Aims', 'Objectives', 'Keywords', 'Approved',
+                'Date Added', 'Last Modified By', 'Last Modified At'
             ])
+            
+            for p in projects:
+                w.writerow([
+                    p.id, p.project_name, p.project_type,
+                    get_trust_name(p.hospital), p.year,
+                    get_specialty_name(p.specialty), p.guidelines,
+                    p.background, p.aims, p.objectives,
+                    p.keywords, 'Yes' if p.approved else 'No',
+                    p.date_added.strftime('%Y-%m-%d %H:%M'),
+                    p.last_modified_by or '',
+                    p.last_modified_at.strftime('%Y-%m-%d %H:%M') if p.last_modified_at else ''
+                ])
+            
+            output = si.getvalue()
+            return Response(
+                output,
+                mimetype='text/csv',
+                headers={'Content-disposition': 'attachment; filename=projects_export.csv'}
+            )
+            
+        else:
+            return jsonify({'error': 'Invalid action'}), 400
+
+        db.session.commit()
+        return jsonify({'success': True}), 200
         
-        return Response(
-            si.getvalue(), mimetype='text/csv',
-            headers={'Content-Disposition': 'attachment;filename=projects_export.csv'}
-        )
-    else:
-        return jsonify({'error': 'Unknown action'}), 400
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Bulk action error: {str(e)}")
+        return jsonify({'error': 'Server error during bulk operation'}), 500
 
-    db.session.commit()
-    return jsonify({'success': True}), 200
+@app.route('/admin/confirm-delete', methods=['POST'])
+@jwt_required()
+def confirm_delete():
+    try:
+        data = request.get_json()
+        ids = data.get('ids', [])
+        
+        if not isinstance(ids, list):
+            return jsonify({'error': 'Invalid request'}), 400
 
+        projects = Project.query.filter(Project.id.in_(ids)).all()
+        
+        for p in projects:
+            # Delete associated records first
+            Rating.query.filter_by(project_id=p.id).delete()
+            Comment.query.filter_by(project_id=p.id).delete()
+            AuditLog.query.filter_by(project_id=p.id).delete()
+            db.session.delete(p)
+            
+        db.session.commit()
+        return jsonify({'success': True}), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+        
 @app.route('/admin/metrics')
 @jwt_required()
 def metrics():

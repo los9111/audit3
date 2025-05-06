@@ -13,49 +13,83 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const csrf = document.querySelector('meta[name="csrf-token"]').content;
 
-    // Bulk actions
-    document.getElementById('bulkApply').addEventListener('click', async function() {
-        const action = document.getElementById('bulkActionSelect').value;
-        if (!action) return;
+// Updated bulk actions with confirmation and proper export handling
+document.getElementById('bulkApply').addEventListener('click', async function() {
+    const action = document.getElementById('bulkActionSelect').value;
+    if (!action) {
+        alert('Please select an action');
+        return;
+    }
 
-        const selected = Array.from(document.querySelectorAll('.selectBox:checked')).map(el => el.dataset.id);
-        if (selected.length === 0) {
-            alert('Please select at least one project');
-            return;
-        }
+    const selected = Array.from(document.querySelectorAll('.selectBox:checked')).map(el => el.dataset.id);
+    if (selected.length === 0) {
+        alert('Please select at least one project');
+        return;
+    }
 
-        if (confirm(`Are you sure you want to ${action} ${selected.length} selected project(s)?`)) {
-            try {
-                const response = await fetch('/admin/bulk-action', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`,
-                        'X-CSRF-Token': csrf
-                    },
-                    body: JSON.stringify({
-                        action: action,
-                        ids: selected
-                    })
-                });
+    try {
+        const response = await fetch('/admin/bulk-action', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                'X-CSRF-Token': csrf
+            },
+            body: JSON.stringify({
+                action: action,
+                ids: selected
+            })
+        });
 
-                if (response.status === 401) {
-                    handleUnauthorized();
-                    return;
+        const result = await response.json();
+        
+        if (response.ok) {
+            if (action === 'export') {
+                // Create a blob from the response text (not JSON)
+                const blob = new Blob([await response.text()], {type: 'text/csv'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'projects_export.csv';
+                document.body.appendChild(a);
+                a.click();
+                URL.revokeObjectURL(url);
+                a.remove();
+            } 
+            else if (action === 'delete' && result.confirm) {
+                if (confirm(result.message)) {
+                    // Make second request to actually delete
+                    const deleteResponse = await fetch('/admin/confirm-delete', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`,
+                            'X-CSRF-Token': csrf
+                        },
+                        body: JSON.stringify({
+                            ids: selected
+                        })
+                    });
+                    
+                    if (deleteResponse.ok) {
+                        window.location.reload();
+                    } else {
+                        throw new Error('Failed to delete projects');
+                    }
                 }
-
-                if (response.ok) {
-                    window.location.reload();
-                } else {
-                    alert('Failed to perform bulk action');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('An error occurred');
             }
+            else {
+                // For other actions (approve)
+                window.location.reload();
+            }
+        } else {
+            throw new Error(result.error || 'Failed to perform bulk action');
         }
-    });
-
+    } catch (error) {
+        console.error('Error:', error);
+        alert(error.message);
+    }
+});
     // Handle CSV import form submission
     document.getElementById('importForm').addEventListener('submit', async function(e) {
         e.preventDefault();
