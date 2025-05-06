@@ -51,7 +51,7 @@ class Project(db.Model):
     last_modified_by = db.Column(db.String(80), nullable=True)
     last_modified_at = db.Column(db.DateTime, nullable=True)
     audit_logs = db.relationship('AuditLog', backref='project', lazy=True)
-    comments = db.relationship('Comment', backref='project', lazy=True)
+    comments = db.relationship('Comment', back_populates='project', lazy=True)
 
     
     def average_rating(self):
@@ -110,6 +110,6 @@ class Comment(db.Model):
     approved = db.Column(db.Boolean, default=False)
     project_id = db.Column(db.Integer, db.ForeignKey('projects.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    project = db.relationship('Project', backref=db.backref('comments', lazy=True))
+    project = db.relationship('Project', back_populates='comments')
 
 

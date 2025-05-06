@@ -1,9 +1,16 @@
 {% extends "base.html" %}
 
 {% block scripts %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Check authentication first
     const token = localStorage.getItem('jwtToken');
+    if (!token) {
+        window.location.href = '/admin/login';
+        return;
+    }
+    
     const csrf = document.querySelector('meta[name="csrf-token"]').content;
 
     // Bulk actions
@@ -32,6 +39,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     })
                 });
 
+                if (response.status === 401) {
+                    handleUnauthorized();
+                    return;
+                }
+
                 if (response.ok) {
                     window.location.reload();
                 } else {
@@ -44,9 +56,64 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // Handle CSV import form submission
+    document.getElementById('importForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const token = localStorage.getItem('jwtToken');
+        if (!token) {
+            handleUnauthorized();
+            return;
+        }
+
+        const formData = new FormData(this);
+        const submitBtn = document.getElementById('importSubmitBtn');
+        
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Importing...';
+        
+        try {
+            const response = await fetch('/admin/import-projects', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'X-CSRF-Token': csrf
+                },
+                body: formData
+            });
+            
+            if (response.status === 401) {
+                handleUnauthorized();
+                return;
+            }
+
+            const data = await response.json();
+            
+            if (response.ok) {
+                flashMessage('Projects imported successfully!', 'success');
+                // Replace jQuery modal hide with vanilla JS
+                const importModal = bootstrap.Modal.getInstance(document.getElementById('importModal'));
+                importModal.hide();
+                window.location.reload();
+            } else {
+                throw new Error(data.error || 'Failed to import projects');
+            }
+        } catch (error) {
+            flashMessage(error.message, 'danger');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Import Projects';
+        }
+    });
+
     // Delete project
     document.querySelectorAll('.delete-project').forEach(btn => {
         btn.addEventListener('click', async function() {
+            const token = localStorage.getItem('jwtToken');
+            if (!token) {
+                handleUnauthorized();
+                return;
+            }
+
             const projectId = this.dataset.projectId;
             if (confirm('Are you sure you want to delete this project?')) {
                 try {
@@ -57,6 +124,11 @@ document.addEventListener('DOMContentLoaded', function() {
                             'X-CSRF-Token': csrf
                         }
                     });
+
+                    if (response.status === 401) {
+                        handleUnauthorized();
+                        return;
+                    }
 
                     if (response.ok) {
                         window.location.reload();
@@ -87,19 +159,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Real-time pending comments count
     function updatePendingCommentsCount() {
+        const token = localStorage.getItem('jwtToken');
+        if (!token) return;
+
         fetch('/admin/pending-comments/count', {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'X-CSRF-Token': csrf
             }
         })
-        .then(response => response.json())
+        .then(response => {
+            if (response.status === 401) {
+                handleUnauthorized();
+                return;
+            }
+            return response.json();
+        })
         .then(data => {
             const badge = document.getElementById('pendingCommentsBadge');
             if (badge) {
                 badge.textContent = data.count;
                 
-                // Show/hide the alert based on count
                 const alertDiv = document.getElementById('pendingCommentsAlert');
                 if (data.count > 0) {
                     if (!alertDiv) {
@@ -126,16 +206,37 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(error => console.error('Error updating pending count:', error));
     }
 
+    // Helper functions
+    function flashMessage(message, category) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${category} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.querySelector('.container.mt-4').prepend(alertDiv);
+    }
+
+    function handleUnauthorized() {
+        localStorage.removeItem('jwtToken');
+        window.location.href = '/admin/login';
+    }
+
+    // Handle template download
+    document.querySelector('a[href*="export-template"]').addEventListener('click', function(e) {
+        e.preventDefault();
+        window.open(this.href, '_blank');
+    });
+
     // Initial update and set interval
     updatePendingCommentsCount();
-    setInterval(updatePendingCommentsCount, 30000); // Update every 30 seconds
+    setInterval(updatePendingCommentsCount, 30000);
 });
 </script>
 {% endblock %}
 
 {% block content %}
 <div class="container mt-4">
-    {# flash messages #}
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% for cat,msg in messages %}
             <div class="alert alert-{{cat}} alert-dismissible fade show">
@@ -151,6 +252,9 @@ document.addEventListener('DOMContentLoaded', function() {
             <small class="text-muted fs-5">({{ current_user.username }})</small>
         </h2>
         <div>
+            <button class="btn btn-outline-primary me-2" data-bs-toggle="modal" data-bs-target="#importModal">
+                <i class="fas fa-file-import"></i> Import CSV
+            </button>
             <a href="{{ url_for('metrics') }}" class="btn btn-outline-info me-2">
                 <i class="fas fa-chart-bar"></i> Metrics
             </a>
@@ -160,7 +264,6 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
     </div>
 
-    {# Pending comments alert - Will be updated dynamically #}
     {% if pending_comments > 0 %}
         <div id="pendingCommentsAlert" class="alert alert-warning alert-dismissible fade show">
             <i class="fas fa-comments me-2"></i>
@@ -214,7 +317,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 </a>
                             </td>
                             <td>{{ get_trust_name(p.hospital) }}</td>
-                            <td>{{p.specialty}}</td>
+                            <td>{{ get_specialty_name(p.specialty) }}</td>
                             <td>{{p.date_added.strftime('%Y-%m-%d')}}</td>
                             <td>
                                 {% if p.approved %}
@@ -268,6 +371,44 @@ document.addEventListener('DOMContentLoaded', function() {
                         {% endfor %}
                     </tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Modal -->
+    <div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="importModalLabel">Import Projects from CSV</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="importForm" enctype="multipart/form-data">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="csvFile" class="form-label">CSV File</label>
+                            <input class="form-control" type="file" id="csvFile" name="csv_file" accept=".csv" required>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="autoApprove" name="auto_approve">
+                            <label class="form-check-label" for="autoApprove">
+                                Auto-approve imported projects
+                            </label>
+                        </div>
+                        <div class="alert alert-info">
+                            <h6>CSV Format Requirements:</h6>
+                            <ul class="mb-0">
+                                <li>Must include headers matching database fields</li>
+                                <li>Required fields: project_name, project_type, hospital, specialty</li>
+                                <li>Download the <a href="{{ url_for('export_template') }}" target="_blank">template CSV</a> for reference</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="importSubmitBtn">Import Projects</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

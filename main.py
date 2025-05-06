@@ -23,6 +23,10 @@ from dotenv import load_dotenv
 from flask_migrate import Migrate
 from slugify import slugify  # pip install python-slugify
 
+from werkzeug.utils import secure_filename
+import csv
+from io import TextIOWrapper
+
 # Local imports
 from database import db
 from forms import ProjectForm
@@ -141,7 +145,9 @@ def view_project_slug(project_type, slug):
     if project_type not in ['audit', 'qip']:
         abort(404)
     project = Project.query.filter_by(
-        project_type=project_type, slug=slug
+        project_type=project_type, 
+        slug=slug,
+        approved=True  # Only show approved projects
     ).first_or_404()
     return render_template('project.html', project=project)
 
@@ -349,18 +355,28 @@ def bulk_action():
         import csv
         si = StringIO()
         w = csv.writer(si)
+        
+        # Write header
         w.writerow([
             'ID', 'Name', 'Type', 'Hospital', 'Year',
-            'Specialty', 'Approved', 'Modified By', 'Modified At'
+            'Specialty', 'Guidelines', 'Background',
+            'Aims', 'Objectives', 'Keywords', 'Approved',
+            'Date Added', 'Last Modified By', 'Last Modified At'
         ])
+        
+        # Write data
         for p in projects:
             w.writerow([
                 p.id, p.project_name, p.project_type,
-                get_trust_name(p.hospital), p.year, p.specialty,
-                'Yes' if p.approved else 'No',
+                get_trust_name(p.hospital), p.year,
+                get_specialty_name(p.specialty), p.guidelines,
+                p.background, p.aims, p.objectives,
+                p.keywords, 'Yes' if p.approved else 'No',
+                p.date_added.strftime('%Y-%m-%d %H:%M'),
                 p.last_modified_by or '',
                 p.last_modified_at.strftime('%Y-%m-%d %H:%M') if p.last_modified_at else ''
             ])
+        
         return Response(
             si.getvalue(), mimetype='text/csv',
             headers={'Content-Disposition': 'attachment;filename=projects_export.csv'}
@@ -369,8 +385,7 @@ def bulk_action():
         return jsonify({'error': 'Unknown action'}), 400
 
     db.session.commit()
-    flash(f"{len(projects)} project(s) {action}d", 'success')
-    return ('', 204)
+    return jsonify({'success': True}), 200
 
 @app.route('/admin/metrics')
 @jwt_required()
@@ -580,7 +595,11 @@ def search():
             Project.specialty.ilike(f'%{t}%'),
             Project.hospital.ilike(f'%{t}%')
         ))
-    results = Project.query.filter(or_(*filters)).order_by(desc(Project.date_added)).all()
+    # Add approved=True to the filter
+    results = Project.query.filter(
+        or_(*filters),
+        Project.approved == True
+    ).order_by(desc(Project.date_added)).all()
     return render_template(
         'search_results.html',
         results=results,
@@ -599,7 +618,7 @@ def internal_error(e):
 
 @app.route('/random')
 def random_project():
-    projects = Project.query.all()
+    projects = Project.query.filter_by(approved=True).all()  # Only approved projects
     if not projects:
         flash('No projects available yet', 'warning')
         return redirect(url_for('index'))
@@ -610,14 +629,118 @@ def random_project():
         slug=chosen.slug
     ))
 
+@app.route('/admin/import-projects', methods=['POST'])
+@jwt_required()
+def import_projects():
+    try:
+        if 'csv_file' not in request.files:
+            return jsonify({'error': 'No file uploaded'}), 400
+            
+        csv_file = request.files['csv_file']
+        if csv_file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+            
+        if not csv_file.filename.lower().endswith('.csv'):
+            return jsonify({'error': 'File must be a CSV'}), 400
+            
+        auto_approve = request.form.get('auto_approve') == 'on'
+        current_user = get_jwt_identity()
+        
+        # Read CSV file
+        csv_data = TextIOWrapper(csv_file, encoding='utf-8')
+        reader = csv.DictReader(csv_data)
+        
+        imported = 0
+        for row in reader:
+            # Validate required fields
+            required_fields = ['project_name', 'project_type', 'hospital', 'specialty']
+            if not all(field in row for field in required_fields):
+                continue
+                
+            # Create new project
+            project = Project(
+                project_name=row['project_name'],
+                project_type=row['project_type'],
+                hospital=row['hospital'],
+                specialty=row['specialty'],
+                year=int(row.get('year', datetime.now().year)),
+                guidelines=row.get('guidelines', ''),
+                background=row.get('background', ''),
+                aims=row.get('aims', ''),
+                objectives=row.get('objectives', ''),
+                keywords=row.get('keywords', ''),
+                data_protection_compliant=row.get('data_protection_compliant', '').lower() == 'true',
+                approved=auto_approve,
+                last_modified_by=current_user,
+                last_modified_at=datetime.utcnow()
+            )
+            
+            # Generate slug
+            project.slug = generate_unique_slug(project)
+            
+            db.session.add(project)
+            imported += 1
+            
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Successfully imported {imported} projects'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/export-template')
+def export_template():
+    # Create a sample CSV in memory
+    from io import StringIO
+    si = StringIO()
+    cw = csv.writer(si)
+    
+    # Write headers
+    headers = [
+        'project_name', 'project_type', 'hospital', 'specialty', 'year',
+        'guidelines', 'background', 'aims', 'objectives', 'keywords',
+        'data_protection_compliant'
+    ]
+    cw.writerow(headers)
+    
+    # Write example row
+    example = [
+        'Sample Audit', 'audit', 'trust1', 'cardio', '2023',
+        'NICE Guidelines', 'Background info', 'Project aims', 'Project objectives',
+        'cardiology,heart', 'true'
+    ]
+    cw.writerow(example)
+    
+    # Return as downloadable CSV
+    output = si.getvalue()
+    return Response(
+        output,
+        mimetype="text/csv",
+        headers={"Content-disposition": "attachment; filename=project_import_template.csv"}
+    )
+
 @app.route('/project/<int:project_id>')
 def view_project_by_id(project_id):
-    proj = Project.query.get_or_404(project_id)
+    proj = Project.query.filter_by(
+        id=project_id,
+        approved=True
+    ).first_or_404()
     return redirect(url_for(
         'view_project_slug',
         project_type=proj.project_type,
         slug=proj.slug
     ))
+
+@app.template_global()
+def get_specialty_name(code):
+    """Convert specialty code to full name"""
+    specialties_dict = dict(MEDICAL_SPECIALTIES)
+    return specialties_dict.get(code, code)
+
 
 @app.route('/rate/<int:project_id>', methods=['POST'])
 def rate_project(project_id):

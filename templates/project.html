@@ -81,7 +81,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div class="text-muted mb-3">
                                 <span class="me-3"><i class="fas fa-hospital me-1"></i> {{ get_trust_name(project.hospital) }}</span>
                                 <span class="me-3"><i class="fas fa-calendar me-1"></i> {{ project.year }}</span>
-                                <span><i class="fas fa-stethoscope me-1"></i> {{ project.specialty }}</span>
+                                <span><i class="fas fa-stethoscope me-1"></i> {{ get_specialty_name(project.specialty) }}</span>
                             </div>
                         </div>
                         <div class="text-end">

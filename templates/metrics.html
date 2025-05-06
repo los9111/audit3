@@ -60,7 +60,7 @@
     <tbody>
       {% for spec, cnt in spec_counts %}
       <tr>
-        <td>{{ spec }}</td>
+        <td>{{ get_specialty_name(spec) }}</td>
         <td>{{ cnt }}</td>
       </tr>
       {% endfor %}

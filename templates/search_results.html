@@ -40,7 +40,7 @@
                     
                     <p class="card-text text-muted">
                         <small>
-                            <i class="fas fa-stethoscope"></i> {{ project.specialty }}<br>
+                            <i class="fas fa-stethoscope"></i> {{ get_specialty_name(project.specialty) }}<br>
                             <i class="fas fa-clock"></i> Added {{ project.date_added.strftime('%d %b %Y') }}
                         </small>
                     </p>
