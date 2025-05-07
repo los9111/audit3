@@ -330,7 +330,9 @@ def approve_project(id):
     flash('Project approved', 'success')
     return redirect(url_for('admin_portal'))
 
-@app.route('/admin/bulk-action', methods=['POST'])
+@app.route('/admin/git fetch origin
+git merge origin/main
+ction', methods=['POST'])
 @jwt_required()
 def bulk_action():
     try:
