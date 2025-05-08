@@ -330,9 +330,7 @@ def approve_project(id):
     flash('Project approved', 'success')
     return redirect(url_for('admin_portal'))
 
-@app.route('/admin/git fetch origin
-git merge origin/main
-ction', methods=['POST'])
+@app.route('/admin/bulk-action', methods=['POST'])
 @jwt_required()
 def bulk_action():
     try:
@@ -731,9 +729,14 @@ def import_projects():
                 last_modified_at=datetime.utcnow()
             )
             
-            # Generate slug
-            project.slug = generate_unique_slug(project)
-            
+            # Generate unique slug starting with -2 for duplicates
+            base_slug = slugify(project.project_name)
+            project.slug = base_slug
+            suffix = 2  # Start at -2
+            while Project.query.filter_by(slug=project.slug).first():
+                project.slug = f"{base_slug}-{suffix}"
+                suffix += 1    
+
             db.session.add(project)
             imported += 1
             
@@ -746,7 +749,7 @@ def import_projects():
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': str(e)}), 500cd
 
 @app.route('/export-template')
 def export_template():
