@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container py-5"> <div class="row justify-content-center"> <div class="col-lg-8"> <div class="card shadow-sm"> <div class="card-body"> <h1 class="mb-4">About WhichAudit</h1>
+                <div class="mb-5">
+                    <h2>Our Mission</h2>
+                    <p>WhichAudit aims to improve healthcare quality by facilitating the sharing of clinical audits and quality improvement projects across the NHS. We believe that by making audits more accessible, we can:</p>
+                    <ul>
+                        <li>Reduce duplication of effort</li>
+                        <li>Spread best practices</li>
+                        <li>Accelerate quality improvement</li>
+                        <li>Enhance patient care nationwide</li>
+                    </ul>
+                </div>
+
+                <div class="mb-5">
+                    <h2>How It Works</h2>
+                    <p>Our platform allows healthcare professionals to:</p>
+                    <ul>
+                        <li><strong>Share</strong> their completed audits with colleagues across the country</li>
+                        <li><strong>Discover</strong> relevant audits in their specialty</li>
+                        <li><strong>Adapt</strong> existing audits for local use</li>
+                        <li><strong>Collaborate</strong> on multi-center audits</li>
+                    </ul>
+                </div>
+
+                <div class="mb-5">
+                    <h2>Our Team</h2>
+                    <p>WhichAudit was developed by a team of NHS clinicians and healthcare IT professionals who recognized the need for better audit sharing across trusts.</p>
+                    <p>Our advisory board includes:</p>
+                    <ul>
+                        <li>Consultants from various specialties</li>
+                        <li>Clinical audit specialists</li>
+                        <li>Quality improvement leads</li>
+                        <li>Data protection officers</li>
+                    </ul>
+                </div>
+
+                <div class="mb-5">
+                    <h2>Data Protection</h2>
+                    <p>We take data protection seriously. All submissions are reviewed to ensure:</p>
+                    <ul>
+                        <li>No patient identifiable information is included</li>
+                        <li>All data is appropriately anonymized</li>
+                        <li>Projects comply with GDPR requirements</li>
+                    </ul>
+                    <p>For more details, see our <a href="{{ url_for('data_protection_policy') }}">Data Protection Policy</a>.</p>
+                </div>
+
+                <div class="alert alert-primary">
+                    <h3>Get Involved</h3>
+                    <p>We're always looking for clinicians to contribute audits or provide feedback on the platform.</p>
+                    <p>Contact us at: <span class="nhs-email-protection">moc.tiduahcihw@troppus</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div> {% endblock %}

@@ -1,23 +1,37 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="text-center mb-5">
-    <h1 class="display-4 fw-bold mb-4">WhichAudit Audit/QIP Repository</h1>
-    <p class="lead text-muted mb-4">
-        Discover, share, and improve clinical audits across the NHS
-    </p>
-    
-    <form action="/search" method="GET" class="mb-5 w-75 mx-auto">
-        <div class="input-group shadow-sm">
-            <input type="text" class="form-control form-control-lg" name="query" 
-                   placeholder="Search audits by specialty, keyword, or hospital...">
-            <button class="btn btn-primary" type="submit">
-                <i class="fas fa-search"></i> Search
-            </button>
-        </div>
-    </form>
+<div class="container">
+    <!-- Main Header and Search -->
+    <div class="text-center mb-5">
+        <h1 class="display-4 fw-bold mb-4">WhichAudit Audit/QIP Repository</h1>
+        <p class="lead text-muted mb-4">
+            Discover, share, and improve clinical audits across the NHS
+        </p>
+        
+        <form action="/search" method="GET" class="mb-4 w-75 mx-auto">
+            <div class="input-group shadow-sm">
+                <input type="text" class="form-control form-control-lg" name="query" 
+                       placeholder="Search audits by specialty, keyword, or hospital...">
+                <button class="btn btn-primary" type="submit">
+                    <i class="fas fa-search"></i> Search
+                </button>
+            </div>
+        </form>
 
-    <div class="row g-4">
+        <!-- Submit/Random Buttons -->
+        <div class="d-flex justify-content-center gap-3 mb-5">
+            <a href="/submit" class="btn btn-outline-primary btn-lg">
+                <i class="fas fa-plus-circle me-2"></i> Submit
+            </a>
+            <a href="/random" class="btn btn-primary btn-lg">
+                <i class="fas fa-random me-2"></i> Random
+            </a>
+        </div>
+    </div>
+
+    <!-- Value Cards -->
+    <div class="row g-4 mb-5">
         <div class="col-md-4">
             <div class="card h-100 p-4">
                 <div class="card-body text-center">
@@ -46,5 +60,87 @@
             </div>
         </div>
     </div>
+
+    <!-- Recently Added Section -->
+    <div class="mt-5 pt-4 border-top">
+        <h2 class="h4 mb-4 text-center">Recently Added Audits</h2>
+        <div class="row g-3">
+            <!-- Example Project 1 -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body">
+                        <span class="badge bg-primary bg-opacity-10 text-primary mb-2">Cardiology</span>
+                        <h3 class="h6 mb-2">Hypertension Management Audit</h3>
+                        <p class="small text-muted mb-3">St. Thomas' Hospital, 2023</p>
+                        <a href="#" class="btn btn-outline-primary btn-sm w-100">
+                            View Details <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Example Project 2 -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body">
+                        <span class="badge bg-primary bg-opacity-10 text-primary mb-2">Emergency Medicine</span>
+                        <h3 class="h6 mb-2">Sepsis Recognition QIP</h3>
+                        <p class="small text-muted mb-3">Manchester Royal, 2023</p>
+                        <a href="#" class="btn btn-outline-primary btn-sm w-100">
+                            View Details <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Example Project 3 -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body">
+                        <span class="badge bg-primary bg-opacity-10 text-primary mb-2">Pediatrics</span>
+                        <h3 class="h6 mb-2">Asthma Care Bundle Audit</h3>
+                        <p class="small text-muted mb-3">Birmingham Children's, 2023</p>
+                        <a href="#" class="btn btn-outline-primary btn-sm w-100">
+                            View Details <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Example Project 4 -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body">
+                        <span class="badge bg-primary bg-opacity-10 text-primary mb-2">Oncology</span>
+                        <h3 class="h6 mb-2">Chemotherapy Safety Review</h3>
+                        <p class="small text-muted mb-3">The Christie, 2023</p>
+                        <a href="#" class="btn btn-outline-primary btn-sm w-100">
+                            View Details <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+<style>
+    .card {
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 12px rgba(0,0,0,0.1) !important;
+    }
+    
+    .value-card {
+        border-radius: 0.5rem;
+    }
+    
+    .badge {
+        font-weight: 500;
+        padding: 0.35em 0.65em;
+    }
+</style>
 {% endblock %}

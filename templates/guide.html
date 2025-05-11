@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Hero Section -->
+    <section class="mb-5">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold mb-4">Guide to Clinical Audit</h1>
+                <p class="lead mb-4">A structured approach to improving patient care through systematic review</p>
+                <a href="#audit-cycle" class="btn btn-primary btn-lg">
+                    <i class="fas fa-arrow-down me-2"></i> Learn the Process
+                </a>
+            </div>
+            <div class="col-lg-6">
+                <img src="https://www.england.nhs.uk/wp-content/uploads/2020/08/clinical-audit-cycle.png" 
+                     alt="Clinical Audit Cycle" class="img-fluid rounded shadow">
+            </div>
+        </div>
+    </section>
+
+    <!-- Audit Cycle Section -->
+    <section id="audit-cycle" class="mb-5 py-4 bg-light rounded-3">
+        <div class="container">
+            <h2 class="text-center mb-5">The Clinical Audit Cycle</h2>
+            
+            <div class="row g-4">
+                {% for step in [
+                    ("Select Topic", "Identify an area for improvement in patient care", "1"),
+                    ("Set Standards", "Define best practice criteria based on evidence", "2"),
+                    ("Collect Data", "Measure current practice against standards", "3"),
+                    ("Analyze Results", "Identify gaps between current and ideal practice", "4"),
+                    ("Implement Changes", "Develop and execute improvement plan", "5"),
+                    ("Re-audit", "Repeat to assess if improvements were sustained", "6")
+                ] %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body p-4 text-center">
+                            <div class="step-number bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 50px; height: 50px;">
+                                {{ step[2] }}
+                            </div>
+                            <h3 class="h5">{{ step[0] }}</h3>
+                            <p class="text-muted">{{ step[1] }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    <!-- Detailed Sections -->
+    <section class="mb-5">
+        <div class="row g-4">
+            <div class="col-lg-6">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <h2 class="h4 mb-4">
+                            <i class="fas fa-lightbulb text-primary me-2"></i> Choosing a Topic
+                        </h2>
+                        <ul class="mb-0">
+                            <li class="mb-2">Focus on areas important for patient outcomes</li>
+                            <li class="mb-2">Select topics with clear evidence-based standards</li>
+                            <li class="mb-2">Consider feasibility within your resources</li>
+                            <li class="mb-2">Prioritize areas with potential for measurable improvement</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <h2 class="h4 mb-4">
+                            <i class="fas fa-database text-primary me-2"></i> Data Collection Tips
+                        </h2>
+                        <ul class="mb-0">
+                            <li class="mb-2">Create a standardized data collection form</li>
+                            <li class="mb-2">Ensure sample size is representative</li>
+                            <li class="mb-2">Maintain patient confidentiality</li>
+                            <li class="mb-2">Document clearly for reproducibility</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Resources Section -->
+    <section class="mb-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <h2 class="h4 mb-4">
+                    <i class="fas fa-book-open text-primary me-2"></i> Further Resources
+                </h2>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <a href="https://www.england.nhs.uk/clinical-audit/" class="d-block p-3 border rounded text-decoration-none hover-shadow">
+                            <h3 class="h6 mb-1">NHS England Clinical Audit</h3>
+                            <p class="small text-muted mb-0">Official guidance and resources</p>
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <a href="https://www.nice.org.uk/" class="d-block p-3 border rounded text-decoration-none hover-shadow">
+                            <h3 class="h6 mb-1">NICE Guidelines</h3>
+                            <p class="small text-muted mb-0">Evidence-based standards</p>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<style>
+    .step-number {
+        font-size: 1.25rem;
+        font-weight: bold;
+    }
+    
+    .hover-shadow {
+        transition: box-shadow 0.3s, transform 0.3s;
+    }
+    
+    .hover-shadow:hover {
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1) !important;
+        transform: translateY(-2px);
+    }
+    
+    .bg-light {
+        background-color: #f8f9fa !important;
+    }
+</style>
+{% endblock %}

@@ -749,7 +749,7 @@ def import_projects():
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500cd
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/export-template')
 def export_template():
@@ -799,6 +799,14 @@ def get_specialty_name(code):
     """Convert specialty code to full name"""
     specialties_dict = dict(MEDICAL_SPECIALTIES)
     return specialties_dict.get(code, code)
+
+@app.route('/guide')
+def guide():
+    return render_template('guide.html')
+
+@app.route('/about')
+def about():
+    return render_template('about.html')
 
 
 @app.route('/rate/<int:project_id>', methods=['POST'])
