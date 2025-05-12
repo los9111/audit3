@@ -661,6 +661,29 @@ def search():
         search_terms=terms
     )
 
+@app.route('/projects')
+def list_projects():
+    trust_filter = request.args.get('trust')
+    specialty_filter = request.args.get('specialty')
+    page = request.args.get('page', 1, type=int)
+    
+    query = Project.query.filter_by(approved=True)
+    
+    if trust_filter:
+        query = query.filter(Project.hospital == trust_filter)
+    if specialty_filter:
+        query = query.filter(Project.specialty == specialty_filter)
+        
+    projects = query.order_by(desc(Project.date_added)).paginate(
+        page=page, per_page=20, error_out=False)
+    
+    return render_template('projects.html',
+                          projects=projects,
+                          NHS_TRUSTS=NHS_TRUSTS,
+                          MEDICAL_SPECIALTIES=MEDICAL_SPECIALTIES,
+                          selected_trust=trust_filter,
+                          selected_specialty=specialty_filter)
+
 @app.errorhandler(404)
 def not_found_error(e):
     return render_template('404.html'), 404
