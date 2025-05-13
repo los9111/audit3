@@ -9,6 +9,18 @@
     <div class="card-body">
       <form method="POST" action="{{ url_for('edit_project', id=project.id) }}">
         {{ form.hidden_tag() }}
+    {% if form.errors %}
+    <div class="alert alert-danger mb-4">
+      <h5 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>Form Errors</h5>
+      <ul class="mb-0">
+        {% for field, errors in form.errors.items() %}
+          {% for error in errors %}
+            <li><strong>{{ form[field].label.text }}:</strong> {{ error }}</li>
+          {% endfor %}
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}        
 
         <div class="row g-3">
           <!-- Name -->

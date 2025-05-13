@@ -309,15 +309,42 @@ def admin_login():
 def edit_project(id):
     proj = Project.query.get_or_404(id)
     form = ProjectForm(obj=proj)
+    
     form.hospital.choices = NHS_TRUSTS
     form.specialty.choices = MEDICAL_SPECIALTIES
+
     if form.validate_on_submit():
-        form.populate_obj(proj)
-        proj.slug = generate_unique_slug(proj)
-        record_audit(proj, get_jwt_identity(), 'edit')
-        db.session.commit()
-        flash('Project updated successfully', 'success')
-        return redirect(url_for('admin_portal'))
+        try:
+            # Explicitly update all fields
+            proj.project_name = form.project_name.data
+            proj.project_type = form.project_type.data
+            proj.hospital = form.hospital.data
+            proj.year = int(form.year.data)
+            proj.specialty = form.specialty.data
+            proj.guidelines = form.guidelines.data.strip()
+            proj.background = form.background.data.strip()
+            proj.aims = form.aims.data.strip()
+            proj.objectives = form.objectives.data.strip()
+            proj.keywords = ','.join([k.strip() for k in form.keywords.data.split(',')])
+            
+            proj.slug = generate_unique_slug(proj)
+            proj.last_modified_by = get_jwt_identity()
+            proj.last_modified_at = datetime.utcnow()
+
+            db.session.commit()
+            flash('Project updated successfully', 'success')
+            return redirect(url_for('admin_portal'))
+            
+        except Exception as e:
+            db.session.rollback()
+            app.logger.error(f"Error saving project: {str(e)}")
+            flash('Error saving project. Please try again.', 'danger')
+
+    # Show form errors if any
+    for field, errors in form.errors.items():
+        for error in errors:
+            flash(f"{getattr(form, field).label.text}: {error}", 'danger')
+
     return render_template('admin_edit.html', form=form, project=proj)
 
 @app.route('/admin/project/<int:id>/approve', methods=['POST'])

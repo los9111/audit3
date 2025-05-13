@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <h2 class="mb-4">Browse Projects</h2>
+    
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('list_projects') }}">
+                <div class="row g-3">
+                    <div class="col-md-5">
+                        <select name="trust" class="form-select">
+                            <option value="">Filter by Trust...</option>
+                            {% for code, name in NHS_TRUSTS %}
+                                <option value="{{ code }}" {% if selected_trust == code %}selected{% endif %}>{{ name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-5">
+                        <select name="specialty" class="form-select">
+                            <option value="">Filter by Specialty...</option>
+                            {% for code, name in MEDICAL_SPECIALTIES %}
+                                <option value="{{ code }}" {% if selected_specialty == code %}selected{% endif %}>{{ name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">Filter</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row row-cols-1 row-cols-md-2 g-4">
+        {% for project in projects.items %}
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ project.project_name }}</h5>
+                    <div class="mb-3">
+                        <span class="badge bg-primary me-1">{{ project.project_type|upper }}</span>
+                        <span class="badge bg-secondary me-1">{{ get_trust_name(project.hospital) }}</span>
+                        <span class="badge bg-info">{{ get_specialty_name(project.specialty) }}</span>
+                    </div>
+                    <p class="card-text text-muted small">
+                        <i class="fas fa-calendar me-1"></i>{{ project.year }}<br>
+                        <i class="fas fa-clock me-1"></i>Added {{ project.date_added.strftime('%d %b %Y') }}
+                    </p>
+                    <a href="{{ url_for('view_project_slug', project_type=project.project_type, slug=project.slug) }}" 
+                       class="btn btn-outline-primary btn-sm">
+                        View Details <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col">
+            <div class="alert alert-info">No projects found matching your filters</div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if projects.pages > 1 %}
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if projects.has_prev %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('list_projects', page=projects.prev_num, trust=selected_trust, specialty=selected_specialty) }}">
+                    Previous
+                </a>
+            </li>
+            {% endif %}
+            
+            {% for page_num in projects.iter_pages() %}
+            <li class="page-item {% if page_num == projects.page %}active{% endif %}">
+                <a class="page-link" href="{{ url_for('list_projects', page=page_num, trust=selected_trust, specialty=selected_specialty) }}">
+                    {{ page_num }}
+                </a>
+            </li>
+            {% endfor %}
+            
+            {% if projects.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('list_projects', page=projects.next_num, trust=selected_trust, specialty=selected_specialty) }}">
+                    Next
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}
